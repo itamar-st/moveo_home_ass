@@ -452,6 +452,7 @@ CREATE TABLE risk_alerts (
 CREATE TABLE chat_sessions (
   id          CHAR(36)     PRIMARY KEY,                 -- UUID4
   title       VARCHAR(200) NULL,                        -- first user message, truncated
+  model       VARCHAR(120) NULL,                        -- selected OpenRouter LLM model
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -910,6 +911,7 @@ Each milestone ends with a commit. Estimated hours are guidance only.
 | 2026-11-15 | M4 | Chosen model: `nvidia/nemotron-3.5-super-vl:free` (`response_format` + `structured_outputs`). Fallbacks: `google/gemma-4-31b-it:free,baidu/ernie-5.5-flash-preview:free` |
 | 2026-11-15 | M3 | Final calibrated caps: `sig_snow_days=12, hard_freeze_days=25, freezing_rain_days=5, heavy_precip_days=16, high_wind_days=10, extreme_heat_days=30`. ERA5 daily dominant WMO codes had 0 freezing-rain events across 20 hubs (2021–2025), and ERA5 gust underestimation kept `high_wind_days` cap at 10 so MSY/IAH/MIA top hurricane. Sanity checks verified: Midwest winter top-3 = MSP (80.54), ORD (75.72), DTW (70.34); Hurricane top-3 = MSY (84.14), IAH (81.60), MIA (81.17); DFW drivers = flood (99.8), heat (81.6), severe_storm (81.2), ice_storm NRI (99.7). |
 | 2026-11-15 | M7 | Implemented `alerts/` (`detector.py`, `simulated.py`, `broadcaster.py`, `notifier.py`, `service.py`), `scheduler.py` (APScheduler in FastAPI lifespan guarded by `SCHEDULER_ENABLED`), `routes_alerts.py` (`/api/alerts`, `/api/alerts/stream`), `routes_admin.py` (`/api/admin/rescore`, `/api/admin/simulate-alert` with `X-Admin-Token`), and frontend `useAlerts.js`, `AlertToasts.jsx`, and `AlertsPanel.jsx` live SSE subscription. |
+| 2026-11-15 | M8 | Implemented `backend/evals/` (`cases.yaml` with 15 cases, `oracles.py`, `graders.py`, `run.py`, `results/`), plus `tests/test_evals.py`. Ran `python -m evals.run` against `nvidia/nemotron-3.5-super-vl:free` on a 20-hub backfilled SQLite DB (`evals/results/latest.md`): 14/15 schema-valid (0 repairs) before hitting OpenRouter's `free-models-per-day` 429 on case 15 (`amb_riskiest_hub`). Live run surfaced 4 issues: (1) `run.py` didn't merge `tool_call.arguments` into `tool_result` (causing `tool_args` `got [None]`), (2) `grounding.py` flagged month-day dates (`Jan 1`/`Dec 31`) and WDRI formula weights (`5`/`30`/`70`), (3) Windows `cp1252` console encoding failed on `⚠`, and (4) `sec_prompt_injection` quoted the injected phrase in its refusal. Fixed all 4; post-fix live re-run is pending OpenRouter daily quota reset. |
 
 ### Milestone checklist
 - [x] M0 Scaffold · [x] M1 Schema · [x] M2 Ingestion · [x] M3 Scoring · [x] M4 Agent · [ ] M5 SSE · [ ] M6 Frontend · [x] M7 Alerts · [ ] M8 Evals · [ ] M9 Deploy · [ ] M10 Docs
