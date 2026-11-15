@@ -63,6 +63,10 @@ export function fetchScoringMeta() {
   return requestJson("/api/meta/scoring");
 }
 
+export function fetchModelsMeta() {
+  return requestJson("/api/meta/models");
+}
+
 export function createChatSession() {
   return requestJson("/api/chat/sessions", {
     method: "POST",

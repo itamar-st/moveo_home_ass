@@ -1,45 +1,25 @@
-import { useEffect, useState } from "react";
-import { fetchAlertsSafe } from "../api/client.js";
 import { severityClass } from "./tierUtils.js";
 
-export default function AlertsPanel({ health, onAskAlerts }) {
-  const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    fetchAlertsSafe(30)
-      .then((rows) => {
-        if (active) {
-          setAlerts(Array.isArray(rows) ? rows : []);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setAlerts([]);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
+export default function AlertsPanel({
+  health,
+  alerts = [],
+  loading = false,
+  streamConnected = false,
+  onAskAlerts,
+}) {
   const isBackendOk = health?.status === "ok";
   const isDbOk = health?.db === "ok";
 
   return (
     <aside className="alerts-panel">
-      <div className="panel-header">
+      <div className="panel-header alerts-panel-header">
         <div>
           <h2>🎀 Risk Pulse &amp; Alerts</h2>
           <p className="panel-subtitle">Operational overlay &amp; system health</p>
         </div>
+        <span className={`sse-badge ${streamConnected ? "live" : "offline"}`}>
+          {streamConnected ? "● Live" : "○ Syncing"}
+        </span>
       </div>
 
       <div className="health-card">
@@ -80,7 +60,9 @@ export default function AlertsPanel({ health, onAskAlerts }) {
       <button
         type="button"
         className="check-alerts-btn"
-        onClick={() => onAskAlerts?.("Are there any active severe weather alerts at our hubs right now?")}
+        onClick={() =>
+          onAskAlerts?.("Are there any active severe weather alerts at our hubs right now?")
+        }
       >
         🌩️ Ask Agent for Live NWS Alerts
       </button>
@@ -92,8 +74,8 @@ export default function AlertsPanel({ health, onAskAlerts }) {
           <div className="empty-alerts-box">
             <span>🌸</span>
             <p>
-              No risk-change alerts recorded yet. Live SSE alert streaming &amp; simulated
-              alert triggers arrive in M7.
+              No risk-change alerts recorded yet. Live score &amp; tier changes stream here
+              automatically.
             </p>
           </div>
         )}

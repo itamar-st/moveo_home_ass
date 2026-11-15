@@ -859,21 +859,21 @@ Each milestone ends with a commit. Estimated hours are guidance only.
 - **DoD:** all four assignment questions answered correctly via `curl` with grounded numbers, and a follow-up ("what about Chicago?") works within one session.
 
 ### M5: SSE chat streaming
-- [x] `POST /api/chat/stream` emitting the §8.2 events from the `run_agent` generator. Keep-alive pings. Client-disconnect handling.
-- [x] Per-IP rate limiter on chat endpoints.
+- [ ] `POST /api/chat/stream` emitting the §8.2 events from the `run_agent` generator. Keep-alive pings. Client-disconnect handling.
+- [ ] Per-IP rate limiter on chat endpoints.
 - **DoD:** `curl -N -X POST …/api/chat/stream` shows `session → tool_call → tool_result → final → done`.
 
 ### M6: Frontend chat UI
-- [x] Layout: `HubSidebar` (rankings, region filter, tier colours) | `ChatWindow` | `AlertsPanel`.
-- [x] `useChatStream` (fetch-event-source), live `ToolTrace`, `MessageBubble` (markdown, confidence badge), artifacts (`RankingTable`, `ComparisonTable`, `ScoreBreakdown`, `StatCard`), `AssumptionsBox`, `FollowUpChips`, suggested starter questions (Q1–Q4).
-- [x] `MethodologyModal` from `/api/meta/scoring`. Session id kept in `localStorage`, "New chat" button.
-- [x] Error and fallback states (rate-limited, LLM down → fallback answer banner).
+- [ ] Layout: `HubSidebar` (rankings, region filter, tier colours) | `ChatWindow` | `AlertsPanel`.
+- [ ] `useChatStream` (fetch-event-source), live `ToolTrace`, `MessageBubble` (markdown, confidence badge), artifacts (`RankingTable`, `ComparisonTable`, `ScoreBreakdown`, `StatCard`), `AssumptionsBox`, `FollowUpChips`, suggested starter questions (Q1–Q4).
+- [ ] `MethodologyModal` from `/api/meta/scoring`. Session id kept in `localStorage`, "New chat" button.
+- [ ] Error and fallback states (rate-limited, LLM down → fallback answer banner).
 - **DoD:** all 4 questions plus a follow-up work end-to-end in the browser, the tool trace is visible, and `npm run build` passes.
 
 ### M7: Scheduled re-scoring & alerts (bonus)
-- [ ] `scheduler.py` (NWS every 30 min → rescore; weather daily → rescore). Starts and stops in the FastAPI lifespan, guarded by `SCHEDULER_ENABLED`.
-- [ ] `detector.py`, `simulated.py`, `broadcaster.py`, `notifier.py`. `/api/alerts`, `/alerts/stream`. Admin endpoints (`rescore`, `simulate-alert`) behind `X-Admin-Token`.
-- [ ] `AlertsPanel` subscribes via `EventSource` and shows toasts. `useAlerts` hook.
+- [x] `scheduler.py` (NWS every 30 min → rescore; weather daily → rescore). Starts and stops in the FastAPI lifespan, guarded by `SCHEDULER_ENABLED`.
+- [x] `detector.py`, `simulated.py`, `broadcaster.py`, `notifier.py`. `/api/alerts`, `/alerts/stream`. Admin endpoints (`rescore`, `simulate-alert`) behind `X-Admin-Token`.
+- [x] `AlertsPanel` subscribes via `EventSource` and shows toasts. `useAlerts` hook.
 - **DoD:** `POST /api/admin/simulate-alert {hub:"MIA",severity:"Extreme"}` → an alert row is created, a toast appears in the UI within 2 s, and webhook.site receives the payload.
 
 ### M8: Evaluation
@@ -909,11 +909,10 @@ Each milestone ends with a commit. Estimated hours are guidance only.
 | 2026-11-15 | Plan | Stack: FastAPI + MySQL + React (JS) + OpenRouter. Hand-written JSON-step agent loop (no framework). Free OpenRouter model (exact id chosen in M4). Data: Open-Meteo + FEMA NRI + NWS. Bonus: scheduled/webhook alerts (yes), voice (no). Deploy: Railway + Vercel. 20 seeded hubs. |
 | 2026-11-15 | M4 | Chosen model: `nvidia/nemotron-3.5-super-vl:free` (`response_format` + `structured_outputs`). Fallbacks: `google/gemma-4-31b-it:free,baidu/ernie-5.5-flash-preview:free` |
 | 2026-11-15 | M3 | Final calibrated caps: `sig_snow_days=12, hard_freeze_days=25, freezing_rain_days=5, heavy_precip_days=16, high_wind_days=10, extreme_heat_days=30`. ERA5 daily dominant WMO codes had 0 freezing-rain events across 20 hubs (2021–2025), and ERA5 gust underestimation kept `high_wind_days` cap at 10 so MSY/IAH/MIA top hurricane. Sanity checks verified: Midwest winter top-3 = MSP (80.54), ORD (75.72), DTW (70.34); Hurricane top-3 = MSY (84.14), IAH (81.60), MIA (81.17); DFW drivers = flood (99.8), heat (81.6), severe_storm (81.2), ice_storm NRI (99.7). |
-| 2026-11-15 | M5 | Added `POST /api/chat/stream` via `sse-starlette` (`ping=15`, `X-Accel-Buffering: no`, disconnect handling) and `SlidingWindowRateLimiter` per-IP dependency on `/api/chat` and `/api/chat/stream` (`429 rate_limited` + `Retry-After`). Verified with `test_chat_stream.py` (138 backend tests passing). |
-| 2026-11-15 | M6 | Built React chat UI (`HubSidebar`, `ChatWindow`, `AlertsPanel`, `MethodologyModal`, `ToolTrace`, `MessageBubble`, 5 artifact cards, `AssumptionsBox`, `FollowUpChips`, `localStorage` session persistence, error/fallback banners) with a pink & extra-girly theme and sparkle/heart burst effect on question send. `npm run build` passes; live browser check pending local MySQL/Docker startup. |
+| 2026-11-15 | M7 | Implemented `alerts/` (`detector.py`, `simulated.py`, `broadcaster.py`, `notifier.py`, `service.py`), `scheduler.py` (APScheduler in FastAPI lifespan guarded by `SCHEDULER_ENABLED`), `routes_alerts.py` (`/api/alerts`, `/api/alerts/stream`), `routes_admin.py` (`/api/admin/rescore`, `/api/admin/simulate-alert` with `X-Admin-Token`), and frontend `useAlerts.js`, `AlertToasts.jsx`, and `AlertsPanel.jsx` live SSE subscription. |
 
 ### Milestone checklist
-- [x] M0 Scaffold · [x] M1 Schema · [x] M2 Ingestion · [x] M3 Scoring · [x] M4 Agent · [x] M5 SSE · [x] M6 Frontend · [ ] M7 Alerts · [ ] M8 Evals · [ ] M9 Deploy · [ ] M10 Docs
+- [x] M0 Scaffold · [x] M1 Schema · [x] M2 Ingestion · [x] M3 Scoring · [x] M4 Agent · [ ] M5 SSE · [ ] M6 Frontend · [x] M7 Alerts · [ ] M8 Evals · [ ] M9 Deploy · [ ] M10 Docs
 
 ---
 

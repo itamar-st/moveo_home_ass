@@ -197,12 +197,14 @@ def test_alembic_initial_migration_loads_and_generates_sql() -> None:
 
     script = ScriptDirectory.from_config(cfg)
     head = script.get_current_head()
-    assert head == "0001_initial"
+    assert head == "0002_add_session_model"
 
     buf = io.StringIO()
     cfg.output_buffer = buf
     command.upgrade(cfg, "head", sql=True)
     sql_output = buf.getvalue()
+
+    assert "ADD COLUMN model" in sql_output
 
     for table in (
         "hubs",

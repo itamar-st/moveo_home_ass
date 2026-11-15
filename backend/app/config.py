@@ -59,6 +59,36 @@ class Settings(BaseSettings):
         return [m.strip() for m in self.openrouter_fallback_models.split(",") if m.strip()]
 
 
+AVAILABLE_LLM_MODELS: tuple[dict[str, str], ...] = (
+    {
+        "id": "nvidia/nemotron-3.5-super-vl:free",
+        "label": "NVIDIA Nemotron 3.5 Super VL",
+        "provider": "NVIDIA",
+        "description": "Default structured-output model (free tier)",
+    },
+    {
+        "id": "google/gemma-4-31b-it:free",
+        "label": "Google Gemma 4 31B",
+        "provider": "Google",
+        "description": "Gemma 4 31B instruction-tuned model (free tier)",
+    },
+    {
+        "id": "nvidia/nemotron-3.5-lightning:free",
+        "label": "NVIDIA Nemotron 3.5 Lightning",
+        "provider": "NVIDIA",
+        "description": "Low-latency Nemotron 3.5 Lightning model (free tier)",
+    },
+)
+
+AVAILABLE_LLM_MODEL_IDS: frozenset[str] = frozenset(m["id"] for m in AVAILABLE_LLM_MODELS)
+
+
+def is_supported_llm_model(model_id: str, settings: Settings | None = None) -> bool:
+    """Return True if model_id is in the selectable 3-model catalog or configured default."""
+    resolved_settings = settings or get_settings()
+    return model_id in AVAILABLE_LLM_MODEL_IDS or model_id == resolved_settings.openrouter_model
+
+
 @lru_cache
 def get_settings() -> Settings:
     """Return cached Settings instance."""

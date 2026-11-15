@@ -68,6 +68,8 @@ async def rescore_all_hubs(
             "hubs_scored": 0,
             "nws_failures": 0,
             "snapshots": [],
+            "previous_snapshots": {},
+            "hubs_by_id": {},
         }
 
     previous_snapshots = await _load_latest_snapshots_map(session)
@@ -165,4 +167,6 @@ async def rescore_all_hubs(
         "nws_failures": nws_failures,
         "window": [start_date.isoformat(), end_date.isoformat()],
         "snapshots": created_snapshots,
+        "previous_snapshots": previous_snapshots,
+        "hubs_by_id": {hub.id: hub for hub in hubs},
     }

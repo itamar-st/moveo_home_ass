@@ -192,6 +192,7 @@ class ChatSession(Base):
 
     id: Mapped[str] = mapped_column(CHAR(36), primary_key=True)
     title: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(120), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,

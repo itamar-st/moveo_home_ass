@@ -1,5 +1,6 @@
 """Hand-written JSON-step agent loop with validation, repair, and deterministic fallback."""
 
+import inspect
 import json
 import logging
 import re
@@ -22,6 +23,7 @@ from app.agent.memory import (
     persist_assistant_message,
     persist_tool_message,
     persist_user_message,
+    update_session_model,
 )
 from app.agent.prompts import build_system_prompt
 from app.agent.tools import (
@@ -187,6 +189,7 @@ async def run_agent(
     *,
     session_id: str | None,
     user_message: str,
+    model: str | None = None,
     max_steps: int | None = None,
     today: date | None = None,
 ) -> AsyncIterator[AgentEvent]:
@@ -196,11 +199,20 @@ async def run_agent(
     step_budget = max_steps or settings.max_agent_steps
 
     if session_id is None:
-        session = await create_session(db, title=user_message.strip()[:200])
+        initial_model = model or settings.openrouter_model
+        session = await create_session(
+            db,
+            title=user_message.strip()[:200],
+            model=initial_model,
+        )
     else:
         session = await get_session(db, session_id)
         if session is None:
             raise SessionNotFoundError(f"Chat session '{session_id}' not found.")
+        if model is not None:
+            await update_session_model(db, session, model)
+
+    selected_model = model or session.model or settings.openrouter_model
 
     history_messages, prior_tool_lines = await load_history_for_llm(
         db,
@@ -211,7 +223,11 @@ async def run_agent(
 
     yield AgentEvent(
         event="session",
-        data={"session_id": session.id, "user_message_id": user_msg.id},
+        data={
+            "session_id": session.id,
+            "user_message_id": user_msg.id,
+            "model": selected_model,
+        },
     )
 
     hubs = list((await db.execute(select(Hub).order_by(Hub.code))).scalars().all())
@@ -227,7 +243,8 @@ async def run_agent(
 
     tool_results: list[ToolResult] = []
     tool_trace: list[ToolTraceItem] = []
-    last_model = settings.openrouter_model
+    last_model = selected_model
+    supports_model_kwarg = "model" in inspect.signature(llm_client.complete).parameters
     fallback_reason: str | None = None
     final_emitted = False
 
@@ -244,10 +261,17 @@ async def run_agent(
 
             for attempt in range(MAX_REPAIRS_PER_STEP + 1):
                 try:
-                    llm_resp = await llm_client.complete(
-                        repair_messages,
-                        response_format=response_format,
-                    )
+                    if supports_model_kwarg:
+                        llm_resp = await llm_client.complete(  # type: ignore[call-arg]
+                            repair_messages,
+                            response_format=response_format,
+                            model=selected_model,
+                        )
+                    else:
+                        llm_resp = await llm_client.complete(
+                            repair_messages,
+                            response_format=response_format,
+                        )
                     last_model = llm_resp.model
                     raw_content = llm_resp.content
                 except LLMUnavailableError as exc:

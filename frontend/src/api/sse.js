@@ -14,10 +14,13 @@ export class StreamHttpError extends Error {
 /**
  * Stream a single chat turn over POST /api/chat/stream using fetch-event-source.
  */
-export async function streamChat({ sessionId, message, onEvent, signal }) {
+export async function streamChat({ sessionId, message, model, onEvent, signal }) {
   const body = { message };
   if (sessionId) {
     body.session_id = sessionId;
+  }
+  if (model) {
+    body.model = model;
   }
 
   await fetchEventSource(`${API_BASE_URL}/api/chat/stream`, {

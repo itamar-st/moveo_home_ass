@@ -15,6 +15,7 @@ from app.agent.llm_client import LLMClientProtocol, OpenRouterLLMClient
 from app.agent.loop import SessionNotFoundError, run_agent
 from app.agent.memory import create_session, get_session, get_session_messages
 from app.api.deps import APIError, enforce_chat_rate_limit, get_db
+from app.config import AVAILABLE_LLM_MODELS, get_settings, is_supported_llm_model
 from app.schemas.agent import FinalAnswer
 from app.schemas.api import (
     ChatMessageOut,
@@ -33,15 +34,43 @@ def get_llm_client() -> LLMClientProtocol:
     return OpenRouterLLMClient()
 
 
+def _validate_requested_model(model: str | None) -> str | None:
+    if model is None:
+        return None
+    cleaned = model.strip()
+    if not cleaned:
+        return None
+    if not is_supported_llm_model(cleaned):
+        raise APIError(
+            422,
+            "invalid_model",
+            f"Unsupported LLM model '{cleaned}'.",
+            details={
+                "model": cleaned,
+                "allowed_models": [m["id"] for m in AVAILABLE_LLM_MODELS],
+            },
+        )
+    return cleaned
+
+
 @router.post("/sessions", status_code=201, response_model=CreateSessionResponse)
 async def create_chat_session(
     db: Annotated[AsyncSession, Depends(get_db)],
     body: Annotated[dict[str, Any] | None, Body()] = None,
 ) -> CreateSessionResponse:
     """Create a new persistent chat session."""
-    _ = body
-    session = await create_session(db)
-    return CreateSessionResponse(session_id=session.id, created_at=session.created_at)
+    requested_model = None
+    if isinstance(body, dict) and body.get("model") is not None:
+        requested_model = _validate_requested_model(str(body.get("model")))
+    session = await create_session(
+        db,
+        model=requested_model or get_settings().openrouter_model,
+    )
+    return CreateSessionResponse(
+        session_id=session.id,
+        created_at=session.created_at,
+        model=session.model,
+    )
 
 
 @router.get("/sessions/{session_id}/messages", response_model=list[ChatMessageOut])
@@ -84,6 +113,7 @@ async def post_chat(
 ) -> ChatResponse:
     """Execute one conversational turn synchronously and return the structured response."""
     resolved_session_id = str(request.session_id) if request.session_id else None
+    requested_model = _validate_requested_model(request.model)
     actual_session_id = resolved_session_id or ""
     tool_trace: list[ToolTraceItem] = []
     final_data: dict[str, Any] | None = None
@@ -94,6 +124,7 @@ async def post_chat(
             llm_client,
             session_id=resolved_session_id,
             user_message=request.message,
+            model=requested_model,
         ):
             if event.event == "session":
                 actual_session_id = str(event.data["session_id"])
@@ -157,6 +188,7 @@ async def post_chat_stream(
 ) -> EventSourceResponse:
     """Stream one conversational turn as §8.2 Server-Sent Events."""
     resolved_session_id = str(chat_request.session_id) if chat_request.session_id else None
+    requested_model = _validate_requested_model(chat_request.model)
     if resolved_session_id is not None:
         existing = await get_session(db, resolved_session_id)
         if existing is None:
@@ -173,6 +205,7 @@ async def post_chat_stream(
             llm_client,
             session_id=resolved_session_id,
             user_message=chat_request.message,
+            model=requested_model,
         )
         try:
             async for agent_event in agent_iter:

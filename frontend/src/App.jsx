@@ -1,8 +1,10 @@
 import { useState } from "react";
+import AlertToasts from "./components/AlertToasts.jsx";
 import AlertsPanel from "./components/AlertsPanel.jsx";
 import ChatWindow from "./components/ChatWindow.jsx";
 import HubSidebar from "./components/HubSidebar.jsx";
 import MethodologyModal from "./components/MethodologyModal.jsx";
+import { useAlerts } from "./hooks/useAlerts.js";
 import { useChatStream } from "./hooks/useChatStream.js";
 import { useHubs } from "./hooks/useHubs.js";
 
@@ -11,6 +13,7 @@ export default function App() {
 
   const hubsState = useHubs();
   const chatState = useChatStream();
+  const alertsState = useAlerts({ onScoringRun: hubsState.refreshAll });
 
   return (
     <div className="app-layout">
@@ -41,6 +44,9 @@ export default function App() {
         errorState={chatState.errorState}
         onClearError={chatState.clearError}
         sendBurstKey={chatState.sendBurstKey}
+        availableModels={chatState.availableModels}
+        selectedModel={chatState.selectedModel}
+        onSelectModel={chatState.setSelectedModel}
         onSendMessage={chatState.sendMessage}
         onNewChat={chatState.newChat}
         onOpenMethodology={() => setMethodologyOpen(true)}
@@ -48,7 +54,15 @@ export default function App() {
 
       <AlertsPanel
         health={hubsState.health}
+        alerts={alertsState.alerts}
+        loading={alertsState.loading}
+        streamConnected={alertsState.streamConnected}
         onAskAlerts={chatState.sendMessage}
+      />
+
+      <AlertToasts
+        toasts={alertsState.toasts}
+        onDismiss={alertsState.dismissToast}
       />
 
       <MethodologyModal

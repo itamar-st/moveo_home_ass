@@ -5,9 +5,9 @@ import math
 import time
 from collections import defaultdict, deque
 from collections.abc import Callable
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import Request
+from fastapi import Header, Request
 
 from app.config import get_settings
 from app.db.session import get_db
@@ -18,6 +18,7 @@ __all__ = [
     "enforce_chat_rate_limit",
     "get_client_ip",
     "get_db",
+    "require_admin_token",
 ]
 
 
@@ -106,4 +107,17 @@ async def enforce_chat_rate_limit(request: Request) -> None:
             "rate_limited",
             f"Rate limit exceeded ({limiter.limit} requests/min). Please retry in {retry_after}s.",
             details={"retry_after_seconds": retry_after},
+        )
+
+
+async def require_admin_token(
+    x_admin_token: Annotated[str | None, Header(alias="X-Admin-Token")] = None,
+) -> None:
+    """FastAPI dependency validating the `X-Admin-Token` header for admin routes."""
+    expected = get_settings().admin_token
+    if not x_admin_token or x_admin_token != expected:
+        raise APIError(
+            401,
+            "unauthorized",
+            "Missing or invalid X-Admin-Token header.",
         )

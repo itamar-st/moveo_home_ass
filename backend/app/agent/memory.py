@@ -9,16 +9,35 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import ChatMessage, ChatSession
 
 
-async def create_session(db: AsyncSession, *, title: str | None = None) -> ChatSession:
+async def create_session(
+    db: AsyncSession,
+    *,
+    title: str | None = None,
+    model: str | None = None,
+) -> ChatSession:
     """Create and persist a new chat session with a UUID4 identifier."""
     session = ChatSession(
         id=str(uuid.uuid4()),
         title=title[:200] if title else None,
+        model=model[:120] if model else None,
     )
     db.add(session)
     await db.commit()
     await db.refresh(session)
     return session
+
+
+async def update_session_model(
+    db: AsyncSession,
+    session: ChatSession,
+    model: str,
+) -> None:
+    """Update the persisted model on an existing chat session if it changed."""
+    if session.model == model:
+        return
+    session.model = model[:120]
+    await db.commit()
+    await db.refresh(session)
 
 
 async def get_session(db: AsyncSession, session_id: str) -> ChatSession | None:

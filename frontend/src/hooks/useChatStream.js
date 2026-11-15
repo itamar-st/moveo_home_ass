@@ -1,8 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchSessionMessages } from "../api/client.js";
+import { fetchModelsMeta, fetchSessionMessages } from "../api/client.js";
 import { StreamHttpError, streamChat } from "../api/sse.js";
 
 const SESSION_STORAGE_KEY = "wria_session_id";
+const MODEL_STORAGE_KEY = "wria_selected_model";
+
+const FALLBACK_MODELS = [
+  {
+    id: "nvidia/nemotron-3.5-super-vl:free",
+    label: "NVIDIA Nemotron 3.5 Super VL",
+    provider: "NVIDIA",
+    description: "Default structured-output model (free tier)",
+  },
+  {
+    id: "google/gemma-4-31b-it:free",
+    label: "Google Gemma 4 31B",
+    provider: "Google",
+    description: "Gemma 4 31B instruction-tuned model (free tier)",
+  },
+  {
+    id: "nvidia/nemotron-3.5-lightning:free",
+    label: "NVIDIA Nemotron 3.5 Lightning",
+    provider: "NVIDIA",
+    description: "Low-latency Nemotron 3.5 Lightning model (free tier)",
+  },
+];
 
 function hydrateMessagesFromHistory(rawMessages) {
   const uiMessages = [];
@@ -71,6 +93,52 @@ export function useChatStream() {
   const [liveTrace, setLiveTrace] = useState([]);
   const [errorState, setErrorState] = useState(null);
   const [sendBurstKey, setSendBurstKey] = useState(0);
+  const [availableModels, setAvailableModels] = useState(FALLBACK_MODELS);
+  const [selectedModel, setSelectedModelState] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem(MODEL_STORAGE_KEY);
+      if (saved && FALLBACK_MODELS.some((m) => m.id === saved)) {
+        return saved;
+      }
+    } catch {
+      // Ignore storage errors.
+    }
+    return FALLBACK_MODELS[0].id;
+  });
+
+  const setSelectedModel = useCallback((modelId) => {
+    setSelectedModelState(modelId);
+    try {
+      if (modelId) {
+        window.localStorage.setItem(MODEL_STORAGE_KEY, modelId);
+      }
+    } catch {
+      // Ignore storage errors.
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchModelsMeta()
+      .then((meta) => {
+        if (!active || !Array.isArray(meta?.models) || meta.models.length === 0) {
+          return;
+        }
+        setAvailableModels(meta.models);
+        setSelectedModelState((prev) => {
+          if (meta.models.some((m) => m.id === prev)) {
+            return prev;
+          }
+          return meta.default_model || meta.models[0].id;
+        });
+      })
+      .catch(() => {
+        // Keep fallback model catalog if backend metadata is temporarily unreachable.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const abortRef = useRef(null);
   const skipHistoryFetchForSessionRef = useRef(null);
@@ -170,6 +238,7 @@ export function useChatStream() {
         await streamChat({
           sessionId: activeSessionId,
           message: text,
+          model: selectedModel,
           signal: controller.signal,
           onEvent: ({ event, data }) => {
             if (event === "session" && data.session_id) {
@@ -269,7 +338,7 @@ export function useChatStream() {
         setStatusStage(null);
       }
     },
-    [isStreaming, sessionId, persistSessionId]
+    [isStreaming, sessionId, selectedModel, persistSessionId]
   );
 
   return {
@@ -282,6 +351,9 @@ export function useChatStream() {
     errorState,
     clearError: () => setErrorState(null),
     sendBurstKey,
+    availableModels,
+    selectedModel,
+    setSelectedModel,
     sendMessage,
     newChat,
   };

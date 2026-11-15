@@ -70,6 +70,9 @@ export default function ChatWindow({
   errorState,
   onClearError,
   sendBurstKey,
+  availableModels = [],
+  selectedModel = "",
+  onSelectModel,
   onSendMessage,
   onNewChat,
   onOpenMethodology,
@@ -133,6 +136,28 @@ export default function ChatWindow({
         </div>
 
         <div className="chat-header-actions">
+          {availableModels.length > 0 && (
+            <label className="model-select-wrap">
+              <span className="sr-only">LLM Model</span>
+              <select
+                className="model-select"
+                aria-label="Select LLM model"
+                value={selectedModel}
+                onChange={(e) => onSelectModel?.(e.target.value)}
+                disabled={isStreaming}
+                title={
+                  availableModels.find((m) => m.id === selectedModel)?.description ||
+                  "Choose LLM model"
+                }
+              >
+                {availableModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    🤖 {m.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button
             type="button"
             className="ghost-pink-btn"

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import APIError, get_db
+from app.config import AVAILABLE_LLM_MODELS, get_settings
 from app.db.models import Hub, RiskSnapshot
 from app.db.repositories import (
     get_hub_by_code,
@@ -18,6 +19,8 @@ from app.schemas.api import (
     HazardFilter,
     HubDetailOut,
     HubOut,
+    LLMModelOption,
+    ModelsMetaResponse,
     RankingItemOut,
     RankingsResponse,
     RegionName,
@@ -250,3 +253,13 @@ async def get_rankings(
 async def get_scoring_meta() -> ScoringMetaResponse:
     """Expose WDRI v1 weights, thresholds, caps, tiers, data sources, and assumptions."""
     return ScoringMetaResponse(**get_scoring_metadata())
+
+
+@router.get("/meta/models", response_model=ModelsMetaResponse)
+async def get_models_meta() -> ModelsMetaResponse:
+    """Expose the selectable LLM models and configured default."""
+    settings = get_settings()
+    return ModelsMetaResponse(
+        default_model=settings.openrouter_model,
+        models=[LLMModelOption(**item) for item in AVAILABLE_LLM_MODELS],
+    )

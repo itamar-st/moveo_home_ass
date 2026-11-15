@@ -68,6 +68,14 @@ export function useHubs() {
     }
   }, []);
 
+  const refreshAll = useCallback(async () => {
+    await Promise.all([
+      refreshHealth(),
+      refreshRankings(),
+      selectedHubCode ? selectHub(selectedHubCode) : Promise.resolve(),
+    ]);
+  }, [refreshHealth, refreshRankings, selectedHubCode, selectHub]);
+
   return {
     health,
     healthError,
@@ -82,6 +90,7 @@ export function useHubs() {
     loadingHubs,
     hubsError,
     refreshRankings,
+    refreshAll,
     selectedHubCode,
     selectedHubDetail,
     loadingDetail,

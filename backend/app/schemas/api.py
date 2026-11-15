@@ -132,11 +132,28 @@ class ErrorResponse(BaseModel):
     error: ErrorDetail
 
 
+class LLMModelOption(BaseModel):
+    """Selectable LLM model option."""
+
+    id: str
+    label: str
+    provider: str
+    description: str
+
+
+class ModelsMetaResponse(BaseModel):
+    """Response for `GET /api/meta/models`."""
+
+    default_model: str
+    models: list[LLMModelOption]
+
+
 class CreateSessionResponse(BaseModel):
     """Response for `POST /api/chat/sessions`."""
 
     session_id: str
     created_at: datetime
+    model: str | None = None
 
 
 class ChatMessageOut(BaseModel):
@@ -154,6 +171,7 @@ class ChatRequest(BaseModel):
 
     session_id: UUID | None = None
     message: str = Field(min_length=1, max_length=2000)
+    model: str | None = Field(default=None, max_length=120)
 
 
 class ChatResponse(BaseModel):
@@ -167,3 +185,42 @@ class ChatResponse(BaseModel):
     model: str
     latency_ms: int
     warnings: list[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# M7: Alerts & Admin Triggers
+# ---------------------------------------------------------------------------
+
+
+class RiskAlertOut(BaseModel):
+    """Serialized risk alert row returned by `GET /api/alerts`."""
+
+    id: int
+    hub: str
+    alert_type: Literal["tier_change", "score_delta", "new_severe_weather"]
+    old_score: float | None = None
+    new_score: float
+    message: str
+    created_at: datetime
+
+
+class AdminRescoreRequest(BaseModel):
+    """Request body for `POST /api/admin/rescore`."""
+
+    refresh_nws: bool = True
+    refresh_weather: bool = False
+
+
+class AdminSimulateAlertRequest(BaseModel):
+    """Request body for `POST /api/admin/simulate-alert`."""
+
+    hub: str = Field(min_length=2, max_length=8)
+    severity: Literal["Extreme", "Severe", "Moderate", "Minor"] = "Extreme"
+    event: str = Field(default="Hurricane Warning", min_length=1, max_length=120)
+    duration_hours: float = Field(default=6.0, gt=0.0, le=168.0)
+
+
+class AdminAcceptedResponse(BaseModel):
+    """202 Accepted response for async admin jobs."""
+
+    status: Literal["accepted"] = "accepted"

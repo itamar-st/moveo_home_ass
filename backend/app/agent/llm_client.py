@@ -10,6 +10,7 @@ from openai import (
     AsyncOpenAI,
     BadRequestError,
     InternalServerError,
+    NotFoundError,
     RateLimitError,
 )
 from pydantic import BaseModel
@@ -101,19 +102,21 @@ class OpenRouterLLMClient:
     async def _create_completion(
         self,
         *,
+        model: str,
+        models_list: list[str],
         messages: list[dict[str, str]],
         response_format: dict[str, Any] | None,
         require_parameters: bool,
     ) -> Any:
         assert self._client is not None
         extra_body: dict[str, Any] = {}
-        if len(self._models) > 1:
-            extra_body["models"] = self._models
+        if len(models_list) > 1:
+            extra_body["models"] = models_list
         if require_parameters:
             extra_body["provider"] = {"require_parameters": True}
 
         kwargs: dict[str, Any] = {
-            "model": self._primary_model,
+            "model": model,
             "messages": messages,
             "temperature": 0.1,
         }
@@ -124,36 +127,84 @@ class OpenRouterLLMClient:
 
         return await self._client.chat.completions.create(**kwargs)
 
+    def _resolve_models(self, model: str | None) -> tuple[str, list[str]]:
+        primary = model or self._primary_model
+        models: list[str] = []
+        for m in [primary, *self._fallbacks]:
+            if m and m not in models:
+                models.append(m)
+        return primary, models[:3]
+
     async def complete(
         self,
         messages: list[dict[str, str]],
         *,
         response_format: dict[str, Any] | None = None,
+        model: str | None = None,
     ) -> LLMResponse:
-        """Call OpenRouter chat completions with json_schema -> json_object fallback."""
+        """Call OpenRouter chat completions with json_schema -> json_object -> plain fallback."""
         if self._client is None:
             raise LLMUnavailableError("OPENROUTER_API_KEY is not configured.")
 
+        primary_model, models_list = self._resolve_models(model)
+
         try:
             response = await self._create_completion(
+                model=primary_model,
+                models_list=models_list,
                 messages=messages,
                 response_format=response_format,
                 require_parameters=response_format is not None,
             )
-        except BadRequestError as exc:
+        except (BadRequestError, NotFoundError) as exc:
             if response_format and response_format.get("type") == "json_schema":
                 logger.warning(
-                    "OpenRouter rejected json_schema response_format (%s); falling back to json_object",
+                    "OpenRouter rejected json_schema for %s (%s); falling back to json_object",
+                    primary_model,
                     exc,
                 )
                 try:
                     response = await self._create_completion(
+                        model=primary_model,
+                        models_list=models_list,
                         messages=messages,
                         response_format={"type": "json_object"},
                         require_parameters=False,
                     )
+                except (BadRequestError, NotFoundError) as obj_exc:
+                    logger.warning(
+                        "OpenRouter rejected json_object for %s (%s); falling back to plain JSON prompt",
+                        primary_model,
+                        obj_exc,
+                    )
+                    try:
+                        response = await self._create_completion(
+                            model=primary_model,
+                            models_list=models_list,
+                            messages=messages,
+                            response_format=None,
+                            require_parameters=False,
+                        )
+                    except Exception as plain_exc:
+                        raise LLMUnavailableError(f"OpenRouter request failed: {plain_exc}") from plain_exc
                 except Exception as fallback_exc:
                     raise LLMUnavailableError(f"OpenRouter request failed: {fallback_exc}") from fallback_exc
+            elif response_format is not None:
+                logger.warning(
+                    "OpenRouter rejected response_format for %s (%s); retrying without response_format",
+                    primary_model,
+                    exc,
+                )
+                try:
+                    response = await self._create_completion(
+                        model=primary_model,
+                        models_list=models_list,
+                        messages=messages,
+                        response_format=None,
+                        require_parameters=False,
+                    )
+                except Exception as plain_exc:
+                    raise LLMUnavailableError(f"OpenRouter request failed: {plain_exc}") from plain_exc
             else:
                 raise LLMUnavailableError(f"OpenRouter bad request: {exc}") from exc
         except Exception as exc:
@@ -164,7 +215,7 @@ class OpenRouterLLMClient:
             raise LLMUnavailableError("OpenRouter returned empty choices.")
 
         content = choices[0].message.content or ""
-        actual_model = getattr(response, "model", None) or self._primary_model
+        actual_model = getattr(response, "model", None) or primary_model
         usage_obj = getattr(response, "usage", None)
         usage_dict = usage_obj.model_dump() if hasattr(usage_obj, "model_dump") else None
 
