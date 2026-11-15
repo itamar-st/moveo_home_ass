@@ -1,0 +1,342 @@
+{
+  "ORD": {
+    "version": "NRI December 2025",
+    "county": "Cook County",
+    "scores": {
+      "composite": 99.97,
+      "hurricane": 48.89,
+      "riverine_flood": 99.94,
+      "coastal_flood": 44.0,
+      "winter_weather": 100.0,
+      "ice_storm": 97.17,
+      "cold_wave": 100.0,
+      "tornado": 99.97,
+      "hail": 99.14,
+      "strong_wind": 99.55,
+      "heat_wave": 99.84
+    }
+  },
+  "MSP": {
+    "version": "NRI December 2025",
+    "county": "Hennepin County",
+    "scores": {
+      "composite": 98.31,
+      "hurricane": null,
+      "riverine_flood": 98.03,
+      "coastal_flood": null,
+      "winter_weather": 97.42,
+      "ice_storm": 79.71,
+      "cold_wave": 99.84,
+      "tornado": 99.62,
+      "hail": 99.59,
+      "strong_wind": 98.85,
+      "heat_wave": 99.1
+    }
+  },
+  "DTW": {
+    "version": "NRI December 2025",
+    "county": "Wayne County",
+    "scores": {
+      "composite": 98.95,
+      "hurricane": 57.78,
+      "riverine_flood": 99.4,
+      "coastal_flood": 49.6,
+      "winter_weather": 94.75,
+      "ice_storm": 99.0,
+      "cold_wave": 99.75,
+      "tornado": 99.49,
+      "hail": 46.53,
+      "strong_wind": 99.71,
+      "heat_wave": 99.29
+    }
+  },
+  "IND": {
+    "version": "NRI December 2025",
+    "county": "Marion County",
+    "scores": {
+      "composite": 97.49,
+      "hurricane": 34.08,
+      "riverine_flood": 98.28,
+      "coastal_flood": null,
+      "winter_weather": 93.7,
+      "ice_storm": 85.34,
+      "cold_wave": 98.7,
+      "tornado": 99.01,
+      "hail": 93.64,
+      "strong_wind": 98.73,
+      "heat_wave": 98.65
+    }
+  },
+  "MCI": {
+    "version": "NRI December 2025",
+    "county": "Jackson County",
+    "scores": {
+      "composite": 96.5,
+      "hurricane": 0.0,
+      "riverine_flood": 96.5,
+      "coastal_flood": null,
+      "winter_weather": 91.18,
+      "ice_storm": 82.34,
+      "cold_wave": 95.96,
+      "tornado": 99.46,
+      "hail": 99.36,
+      "strong_wind": 96.06,
+      "heat_wave": 99.13
+    }
+  },
+  "STL": {
+    "version": "NRI December 2025",
+    "county": "St. Louis City",
+    "scores": {
+      "composite": 98.7,
+      "hurricane": 32.08,
+      "riverine_flood": 96.98,
+      "coastal_flood": null,
+      "winter_weather": 79.73,
+      "ice_storm": 83.71,
+      "cold_wave": 87.21,
+      "tornado": 98.85,
+      "hail": 87.05,
+      "strong_wind": 94.53,
+      "heat_wave": 99.81
+    }
+  },
+  "EWR": {
+    "version": "NRI December 2025",
+    "county": "Essex County",
+    "scores": {
+      "composite": 97.71,
+      "hurricane": 91.82,
+      "riverine_flood": 98.82,
+      "coastal_flood": 65.4,
+      "winter_weather": 97.01,
+      "ice_storm": 78.71,
+      "cold_wave": 95.42,
+      "tornado": 94.91,
+      "hail": 86.8,
+      "strong_wind": 98.66,
+      "heat_wave": 98.97
+    }
+  },
+  "BOS": {
+    "version": "NRI December 2025",
+    "county": "Suffolk County",
+    "scores": {
+      "composite": 93.51,
+      "hurricane": 93.66,
+      "riverine_flood": 94.72,
+      "coastal_flood": 92.2,
+      "winter_weather": 44.14,
+      "ice_storm": 79.87,
+      "cold_wave": 94.18,
+      "tornado": 75.35,
+      "hail": 76.94,
+      "strong_wind": 52.04,
+      "heat_wave": 97.46
+    }
+  },
+  "MIA": {
+    "version": "NRI December 2025",
+    "county": "Miami-Dade County",
+    "scores": {
+      "composite": 99.62,
+      "hurricane": 99.96,
+      "riverine_flood": 99.71,
+      "coastal_flood": 99.6,
+      "winter_weather": 0.0,
+      "ice_storm": null,
+      "cold_wave": 99.52,
+      "tornado": 98.73,
+      "hail": 96.56,
+      "strong_wind": 82.44,
+      "heat_wave": 99.26
+    }
+  },
+  "ATL": {
+    "version": "NRI December 2025",
+    "county": "Fulton County",
+    "scores": {
+      "composite": 95.8,
+      "hurricane": 74.93,
+      "riverine_flood": 97.68,
+      "coastal_flood": null,
+      "winter_weather": 72.44,
+      "ice_storm": 90.64,
+      "cold_wave": 89.82,
+      "tornado": 97.01,
+      "hail": 95.9,
+      "strong_wind": 93.58,
+      "heat_wave": 92.39
+    }
+  },
+  "CLT": {
+    "version": "NRI December 2025",
+    "county": "Mecklenburg County",
+    "scores": {
+      "composite": 97.07,
+      "hurricane": 84.19,
+      "riverine_flood": 98.95,
+      "coastal_flood": null,
+      "winter_weather": 85.36,
+      "ice_storm": 94.9,
+      "cold_wave": 82.16,
+      "tornado": 97.42,
+      "hail": 94.59,
+      "strong_wind": 91.7,
+      "heat_wave": 94.35
+    }
+  },
+  "IAH": {
+    "version": "NRI December 2025",
+    "county": "Harris County",
+    "scores": {
+      "composite": 99.94,
+      "hurricane": 100.0,
+      "riverine_flood": 99.97,
+      "coastal_flood": 83.2,
+      "winter_weather": 88.83,
+      "ice_storm": 99.57,
+      "cold_wave": 99.9,
+      "tornado": 100.0,
+      "hail": 91.98,
+      "strong_wind": 99.27,
+      "heat_wave": 99.71
+    }
+  },
+  "DFW": {
+    "version": "NRI December 2025",
+    "county": "Dallas County",
+    "scores": {
+      "composite": 99.65,
+      "hurricane": 73.55,
+      "riverine_flood": 99.55,
+      "coastal_flood": null,
+      "winter_weather": 98.66,
+      "ice_storm": 99.67,
+      "cold_wave": 99.87,
+      "tornado": 99.84,
+      "hail": 100.0,
+      "strong_wind": 98.47,
+      "heat_wave": 99.94
+    }
+  },
+  "MSY": {
+    "version": "NRI December 2025",
+    "county": "Orleans Parish",
+    "scores": {
+      "composite": 98.25,
+      "hurricane": 99.67,
+      "riverine_flood": 93.51,
+      "coastal_flood": 81.2,
+      "winter_weather": 84.53,
+      "ice_storm": 64.65,
+      "cold_wave": 97.68,
+      "tornado": 71.56,
+      "hail": 92.84,
+      "strong_wind": 46.82,
+      "heat_wave": 97.24
+    }
+  },
+  "MEM": {
+    "version": "NRI December 2025",
+    "county": "Shelby County",
+    "scores": {
+      "composite": 99.36,
+      "hurricane": 67.13,
+      "riverine_flood": 98.66,
+      "coastal_flood": null,
+      "winter_weather": 88.67,
+      "ice_storm": 91.24,
+      "cold_wave": 99.78,
+      "tornado": 99.78,
+      "hail": 12.82,
+      "strong_wind": 87.69,
+      "heat_wave": 99.55
+    }
+  },
+  "DEN": {
+    "version": "NRI December 2025",
+    "county": "Denver County",
+    "scores": {
+      "composite": 95.23,
+      "hurricane": null,
+      "riverine_flood": 95.26,
+      "coastal_flood": null,
+      "winter_weather": 91.95,
+      "ice_storm": 12.13,
+      "cold_wave": 92.14,
+      "tornado": 97.87,
+      "hail": 99.87,
+      "strong_wind": 96.09,
+      "heat_wave": 71.48
+    }
+  },
+  "SLC": {
+    "version": "NRI December 2025",
+    "county": "Salt Lake County",
+    "scores": {
+      "composite": 98.57,
+      "hurricane": null,
+      "riverine_flood": 92.94,
+      "coastal_flood": 0.0,
+      "winter_weather": 98.73,
+      "ice_storm": 13.76,
+      "cold_wave": 32.63,
+      "tornado": 70.96,
+      "hail": 68.1,
+      "strong_wind": 68.45,
+      "heat_wave": 92.94
+    }
+  },
+  "PHX": {
+    "version": "NRI December 2025",
+    "county": "Maricopa County",
+    "scores": {
+      "composite": 99.87,
+      "hurricane": 26.57,
+      "riverine_flood": 99.87,
+      "coastal_flood": null,
+      "winter_weather": 38.73,
+      "ice_storm": null,
+      "cold_wave": 0.0,
+      "tornado": 84.0,
+      "hail": 99.52,
+      "strong_wind": 99.08,
+      "heat_wave": 100.0
+    }
+  },
+  "LAX": {
+    "version": "NRI December 2025",
+    "county": "Los Angeles County",
+    "scores": {
+      "composite": 100.0,
+      "hurricane": 0.0,
+      "riverine_flood": 100.0,
+      "coastal_flood": 90.0,
+      "winter_weather": 74.76,
+      "ice_storm": null,
+      "cold_wave": 5.82,
+      "tornado": 97.68,
+      "hail": 93.03,
+      "strong_wind": 75.19,
+      "heat_wave": 99.33
+    }
+  },
+  "SEA": {
+    "version": "NRI December 2025",
+    "county": "King County",
+    "scores": {
+      "composite": 99.68,
+      "hurricane": null,
+      "riverine_flood": 99.46,
+      "coastal_flood": 71.0,
+      "winter_weather": 94.72,
+      "ice_storm": 91.1,
+      "cold_wave": 26.53,
+      "tornado": 73.16,
+      "hail": 3.15,
+      "strong_wind": 4.48,
+      "heat_wave": 98.17
+    }
+  }
+}

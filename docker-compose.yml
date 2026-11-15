@@ -1,0 +1,65 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: wria
+      MYSQL_USER: wria
+      MYSQL_PASSWORD: wria
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uwria", "-pwria"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: mysql+asyncmy://wria:wria@mysql:3306/wria
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-meta-llama/llama-3.3-70b-instruct:free}
+      OPENROUTER_FALLBACK_MODELS: ${OPENROUTER_FALLBACK_MODELS:-}
+      OPENROUTER_APP_URL: ${OPENROUTER_APP_URL:-http://localhost:5173}
+      OPENROUTER_APP_NAME: ${OPENROUTER_APP_NAME:-Weather Risk Intelligence Agent}
+      NWS_USER_AGENT: ${NWS_USER_AGENT:-WeatherRiskAgent (you@example.com)}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me-admin-token}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      ALERT_SCORE_DELTA: ${ALERT_SCORE_DELTA:-10}
+      SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
+      NWS_REFRESH_MINUTES: ${NWS_REFRESH_MINUTES:-30}
+      WEATHER_REFRESH_CRON: ${WEATHER_REFRESH_CRON:-0 6 * * *}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      CHAT_RATE_LIMIT_PER_MIN: ${CHAT_RATE_LIMIT_PER_MIN:-10}
+      MAX_AGENT_STEPS: ${MAX_AGENT_STEPS:-6}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    image: node:18-alpine
+    working_dir: /app
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
