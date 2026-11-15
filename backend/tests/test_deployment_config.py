@@ -109,15 +109,17 @@ async def test_chat_stream_sets_no_buffering_header(db_session) -> None:
         yield AgentEvent(event="done", data={})
 
     with patch("app.api.routes_chat.run_agent", side_effect=_fake_run_agent):
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            async with client.stream(
+        async with (
+            AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client,
+            client.stream(
                 "POST",
                 "/api/chat/stream",
                 json={"message": "hello"},
-            ) as response:
-                assert response.status_code == 200
-                assert response.headers.get("x-accel-buffering") == "no"
-                assert response.headers.get("cache-control") == "no-cache"
+            ) as response,
+        ):
+            assert response.status_code == 200
+            assert response.headers.get("x-accel-buffering") == "no"
+            assert response.headers.get("cache-control") == "no-cache"
 
 
 @pytest.mark.asyncio
@@ -137,10 +139,12 @@ async def test_alerts_stream_sets_no_buffering_header(db_session) -> None:
     app.dependency_overrides[get_db] = _override_db
 
     with patch("starlette.requests.Request.is_disconnected", new=AsyncMock(return_value=True)):
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            async with client.stream("GET", "/api/alerts/stream") as response:
-                assert response.status_code == 200
-                assert response.headers.get("x-accel-buffering") == "no"
-                assert response.headers.get("cache-control") == "no-cache"
-                body = (await response.aread()).decode("utf-8")
-                assert "hello" in body
+        async with (
+            AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client,
+            client.stream("GET", "/api/alerts/stream") as response,
+        ):
+            assert response.status_code == 200
+            assert response.headers.get("x-accel-buffering") == "no"
+            assert response.headers.get("cache-control") == "no-cache"
+            body = (await response.aread()).decode("utf-8")
+            assert "hello" in body

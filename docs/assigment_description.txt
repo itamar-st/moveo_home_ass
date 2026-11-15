@@ -1,0 +1,39 @@
+Weather Risk Intelligence Agent - Assignment Overview
+====================================================
+
+Goal
+----
+Build an AI-powered agent for a US logistics company to help analysts decide which regional distribution hubs are most exposed to severe weather disruption and should be prioritized for resilience investments.
+
+What the Agent Must Do
+----------------------
+- Gather weather and hazard data from public APIs.
+- Rank and compare hubs using a defined, deterministic scoring/ranking logic or KPI (not just LLM-generated numbers).
+- Answer questions such as:
+  * Which Midwest hubs are most exposed to winter disruption?
+  * Compare Miami and Houston on hurricane and flood exposure.
+  * What percentage of days in Denver last year had snowfall?
+  * Why is the Dallas hub's weather disruption risk high?
+- Explain its reasoning clearly and support conversational follow-up questions.
+
+Core Requirements
+-----------------
+- Deterministic scoring/ranking: Calculations and rankings must be computed reliably in code, not left solely to the LLM.
+- API & Chat UI: Expose the agent through an API and build a chat interface to talk to it (voice input/output is a bonus).
+- Structured LLM output: Enforce a JSON schema between the LLM and your application code.
+- Evaluation: Include a small evaluation set and a way to run it.
+- Transparency: Clearly communicate assumptions, uncertainty, and scope.
+- Bonus: Scheduled or webhook-triggered alerts when a hub's risk score changes.
+
+Deliverables (24-Hour Scope)
+----------------------------
+1. Source code + run instructions: Must be runnable live during a follow-up interview (deploying to a public URL is preferred, not mandatory).
+2. Short architecture/design document covering:
+   - System components and how they interact
+   - Repository structure
+   - Data storage choice
+3. Full AI session log (mandatory): The plan and full conversation with the AI coding agent used to build the project.
+
+Guiding Principle
+-----------------
+Scoped for roughly one day of work (Python preferred). Prioritize clarity, sound reasoning, and thoughtful design over polish - a narrow scope done well is better than a broad scope done shallowly.
