@@ -125,7 +125,7 @@ export default function ChatWindow({
     <section className="chat-panel">
       <header className="chat-header">
         <div className="chat-title-group">
-          <h1>Weather Risk Agent</h1>
+          <h1>💖 Weather Risk Agent</h1>
           <span className="version-tag">WDRI v1</span>
         </div>
 
@@ -193,7 +193,7 @@ export default function ChatWindow({
 
           {!loadingHistory && messages.length === 0 && (
             <div className="empty-hero">
-              <h2>Ask about hub weather risk</h2>
+              <h2>💕 Ask about hub weather risk</h2>
               <p>
                 Analyze 20 US distribution hubs across winter, hurricane, flood, severe storm, and
                 heat exposure.
@@ -232,10 +232,10 @@ export default function ChatWindow({
             <div className="message-row assistant-row streaming-row">
               <div className="assistant-content">
                 <div className="streaming-status">
-                  <span className="typing-dots" aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
+                  <span className="typing-hearts" aria-hidden="true">
+                    <span>💗</span>
+                    <span>💜</span>
+                    <span>💗</span>
                   </span>
                   <span>{formatStageLabel(statusStage)}</span>
                 </div>
@@ -325,7 +325,7 @@ export default function ChatWindow({
               className="send-btn"
               disabled={isStreaming || !draft.trim()}
             >
-              {isStreaming ? "Thinking…" : "Send"}
+              {isStreaming ? "Thinking…" : "Send 💖"}
             </button>
           </div>
         </div>

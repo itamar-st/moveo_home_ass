@@ -106,7 +106,9 @@ export default function MessageBubble({
               className={`confidence-pill conf-${confidence}`}
               title={answer.confidence_rationale || "Confidence rating"}
             >
-              <span className="conf-dot" aria-hidden="true" />
+              <span aria-hidden="true">
+                {confidence === "high" ? "💖" : confidence === "medium" ? "💜" : "🫧"}
+              </span>{" "}
               {confidence} confidence
             </span>
             {message.latencyMs !== null && message.latencyMs !== undefined && (

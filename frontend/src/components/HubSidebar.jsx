@@ -31,7 +31,7 @@ export default function HubSidebar({
   return (
     <aside className="sidebar-panel">
       <div className="panel-header">
-        <h2>Portfolio Hubs</h2>
+        <h2>🩷 Portfolio Hubs</h2>
         <span className="panel-count">{rankings.length}</span>
       </div>
 

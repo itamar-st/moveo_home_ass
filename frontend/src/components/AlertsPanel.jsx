@@ -13,7 +13,7 @@ export default function AlertsPanel({
   return (
     <aside className="alerts-panel">
       <div className="panel-header alerts-panel-header">
-        <h2>Alerts &amp; Status</h2>
+        <h2>💜 Alerts &amp; Status</h2>
         <span className={`sse-badge ${streamConnected ? "live" : "offline"}`}>
           {streamConnected ? "● Live" : "○ Syncing"}
         </span>

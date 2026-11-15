@@ -45,7 +45,7 @@ export default function MethodologyModal({ isOpen, onClose }) {
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <h2>WDRI Scoring Methodology</h2>
+            <h2>💖 WDRI Scoring Methodology</h2>
             <p className="panel-subtitle">
               Deterministic Weather Disruption Risk Index ({meta?.scoring_version || "wdri-v1"})
             </p>
