@@ -15,6 +15,11 @@ QUANTITATIVE_INTENTS = frozenset({"ranking", "comparison", "statistic", "explana
 
 # Match ISO dates first so their "-MM-DD" segments aren't parsed as negative numbers.
 ISO_DATE_RE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+MONTH_DAY_RE = re.compile(
+    r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December"
+    r"|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+\d{1,2}(?:st|nd|rd|th)?\b",
+    re.IGNORECASE,
+)
 LIST_PREFIX_RE = re.compile(r"(?m)^\s*\d+\.\s+")
 NUMBER_RE = re.compile(r"(?<![A-Za-z0-9_])(-?\d+(?:,\d{3})*(?:\.\d+)?)")
 
@@ -71,10 +76,11 @@ def collect_tool_numbers(
 
 
 def extract_answer_numbers(text: str) -> list[float]:
-    """Extract numeric claims from answer_markdown while ignoring list markers and ISO date dashes."""
+    """Extract numeric claims from answer_markdown while ignoring list markers and date expressions."""
     without_lists = LIST_PREFIX_RE.sub("", text)
     # Keep years from ISO dates, drop -MM-DD so they aren't parsed as negative numbers.
     without_dates = ISO_DATE_RE.sub(lambda m: m.group(1), without_lists)
+    without_dates = MONTH_DAY_RE.sub(" ", without_dates)
 
     extracted: list[float] = []
     for match in NUMBER_RE.finditer(without_dates):
@@ -129,8 +135,8 @@ def check_final_answer(
     sanitized = final_answer.model_copy(update={"hubs": valid_hubs})
 
     tool_numbers = collect_tool_numbers(tool_results, prior_tool_lines=prior_tool_lines)
-    # Standard WDRI tier cutoffs & portfolio size (20) are static domain constants.
-    domain_constants = {0.0, 20.0, 25.0, 50.0, 75.0, 100.0}
+    # Standard WDRI tier cutoffs, formula weights (70/30), 5-year/5-hazard window, & portfolio size (20).
+    domain_constants = {0.0, 5.0, 20.0, 25.0, 30.0, 50.0, 70.0, 75.0, 100.0}
     allowed_numbers = tool_numbers | domain_constants
 
     answer_numbers = extract_answer_numbers(sanitized.answer_markdown)
