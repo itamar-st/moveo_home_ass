@@ -73,6 +73,7 @@ export function useChatStream() {
   const [sendBurstKey, setSendBurstKey] = useState(0);
 
   const abortRef = useRef(null);
+  const skipHistoryFetchForSessionRef = useRef(null);
 
   const persistSessionId = useCallback((id) => {
     setSessionId(id);
@@ -89,6 +90,10 @@ export function useChatStream() {
 
   useEffect(() => {
     if (!sessionId) {
+      return;
+    }
+    if (skipHistoryFetchForSessionRef.current === sessionId) {
+      skipHistoryFetchForSessionRef.current = null;
       return;
     }
     let active = true;
@@ -168,7 +173,10 @@ export function useChatStream() {
           signal: controller.signal,
           onEvent: ({ event, data }) => {
             if (event === "session" && data.session_id) {
-              persistSessionId(data.session_id);
+              if (data.session_id !== activeSessionId) {
+                skipHistoryFetchForSessionRef.current = data.session_id;
+                persistSessionId(data.session_id);
+              }
             } else if (event === "status") {
               setStatusStage(data);
             } else if (event === "tool_call") {
