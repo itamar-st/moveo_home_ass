@@ -890,9 +890,9 @@ Each milestone ends with a commit. Estimated hours are guidance only.
 - **DoD:** the public URL answers Q1–Q4, and the alerts stream works on the deployed site.
 
 ### M10: Documentation & deliverables
-- [ ] `README.md`: prerequisites, local run (docker-compose and manual), env vars, backfill/seed, running tests and evals, deployed URL, demo script (incl. simulate-alert).
-- [ ] `docs/ARCHITECTURE.md`: system architecture (reuse the §4 diagrams), repository structure, **data storage choice** (why MySQL, schema overview, trade-offs), scoring methodology, assumptions/uncertainty/scope, limitations and next steps.
-- [ ] Export the full AI-agent session(s) (plan, transcripts, decisions) into `docs/agent-session/`. **Mandatory deliverable.**
+- [x] `README.md`: prerequisites, local run (docker-compose and manual), env vars, backfill/seed, running tests and evals, deployed URL, demo script (incl. simulate-alert).
+- [x] `docs/ARCHITECTURE.md`: system architecture (reuse the §4 diagrams), repository structure, **data storage choice** (why MySQL, schema overview, trade-offs), scoring methodology, assumptions/uncertainty/scope, limitations and next steps.
+- [x] Export the full AI-agent session(s) (plan, transcripts, decisions) into `docs/agent-session/`. **Mandatory deliverable.**
 - **DoD:** a fresh clone and the README steps run locally without guesswork, and all deliverables are present.
 
 ### Stretch ()
@@ -913,9 +913,10 @@ Each milestone ends with a commit. Estimated hours are guidance only.
 | 2026-11-15 | M7 | Implemented `alerts/` (`detector.py`, `simulated.py`, `broadcaster.py`, `notifier.py`, `service.py`), `scheduler.py` (APScheduler in FastAPI lifespan guarded by `SCHEDULER_ENABLED`), `routes_alerts.py` (`/api/alerts`, `/api/alerts/stream`), `routes_admin.py` (`/api/admin/rescore`, `/api/admin/simulate-alert` with `X-Admin-Token`), and frontend `useAlerts.js`, `AlertToasts.jsx`, and `AlertsPanel.jsx` live SSE subscription. |
 | 2026-11-15 | M8 | Implemented `backend/evals/` (`cases.yaml` with 15 cases, `oracles.py`, `graders.py`, `run.py`, `results/`), plus `tests/test_evals.py`. Ran `python -m evals.run` against `nvidia/nemotron-3.5-super-vl:free` on a 20-hub backfilled SQLite DB (`evals/results/latest.md`): 14/15 schema-valid (0 repairs) before hitting OpenRouter's `free-models-per-day` 429 on case 15 (`amb_riskiest_hub`). Live run surfaced 4 issues: (1) `run.py` didn't merge `tool_call.arguments` into `tool_result` (causing `tool_args` `got [None]`), (2) `grounding.py` flagged month-day dates (`Jan 1`/`Dec 31`) and WDRI formula weights (`5`/`30`/`70`), (3) Windows `cp1252` console encoding failed on `⚠`, and (4) `sec_prompt_injection` quoted the injected phrase in its refusal. Fixed all 4; post-fix live re-run is pending OpenRouter daily quota reset. |
 | 2026-11-16 | M9 | Completed M9 deployment & verification: added `mysql://`/`mysql+pymysql://` → `mysql+asyncmy://` URL normalization in `backend/app/config.py`, added `frontend/vercel.json` SPA rewrite, and added `backend/tests/test_deployment_config.py` (7 tests covering URL normalization, CORS parsing, Dockerfiles, `vercel.json`, and `X-Accel-Buffering: no` on SSE endpoints). Deployed updated backend to Railway (`https://backend-production-20146418.up.railway.app`) alongside MySQL and frontend (`https://moveo-home-ass-ist.up.railway.app`). Verified `/api/health` (`db: ok`, `weather_data_until: 2026-11-14`), `/api/alerts/stream` (`X-Accel-Buffering: no`, immediate `hello` event), and `/api/chat/stream` + `/api/chat` on Q1–Q4. |
+| 2026-11-16 | M10 | Completed M10 documentation & deliverables: wrote comprehensive `README.md` (prerequisites, Docker & manual setup, env vars, backfill/seed, tests/evals, live Railway URLs, demo script with `simulate-alert`), authored `docs/ARCHITECTURE.md` (Mermaid diagrams, repo structure, MySQL storage choice & trade-offs, WDRI v1 methodology, agent/grounding design, assumptions/uncertainty, limitations/next steps), and exported all 21 AI-agent sessions to `docs/agent-session/`. Aligned `backend/tests/test_fullstack_integration.py` selectors with the simplified UI (`169 passed` in `pytest`, `16 passed` in `vitest`, `vite build` clean). |
 
 ### Milestone checklist
-- [x] M0 Scaffold · [x] M1 Schema · [x] M2 Ingestion · [x] M3 Scoring · [x] M4 Agent · [ ] M5 SSE · [ ] M6 Frontend · [x] M7 Alerts · [ ] M8 Evals · [x] M9 Deploy · [ ] M10 Docs
+- [x] M0 Scaffold · [x] M1 Schema · [x] M2 Ingestion · [x] M3 Scoring · [x] M4 Agent · [ ] M5 SSE · [ ] M6 Frontend · [x] M7 Alerts · [ ] M8 Evals · [x] M9 Deploy · [x] M10 Docs
 
 ---
 

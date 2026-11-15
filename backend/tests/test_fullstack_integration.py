@@ -575,15 +575,15 @@ def test_frontend_backend_agent_end_to_end(fullstack_env: FullStackServer) -> No
             # 1. Health & HubSidebar hydration
             alerts_panel = page.locator(".alerts-panel")
             alerts_panel.get_by_text("Online").wait_for(timeout=10000)
-            alerts_panel.get_by_text("Connected").wait_for(timeout=10000)
+            alerts_panel.get_by_text("● Live").wait_for(timeout=10000)
 
             sidebar = page.locator(".sidebar-panel")
             sidebar.locator(".hub-card").first.wait_for(timeout=10000)
             assert sidebar.locator(".hub-card").count() == 20
 
             # Filter sidebar by Midwest + Winter and inspect ORD detail card
-            sidebar.locator("select").select_option("Midwest")
-            sidebar.get_by_role("button", name="Winter", exact=True).click()
+            sidebar.get_by_label("Region").select_option("Midwest")
+            sidebar.get_by_label("Hazard").select_option("winter")
             sidebar.locator(".hub-card", has_text="MSP").wait_for(timeout=5000)
             assert sidebar.locator(".hub-card").count() == 6
 
@@ -600,7 +600,7 @@ def test_frontend_backend_agent_end_to_end(fullstack_env: FullStackServer) -> No
             modal.wait_for(state="hidden")
 
             # 2. Q1 Starter Question -> Repair loop -> rank_hubs SSE -> RankingTable + ToolTrace
-            page.locator(".starter-card", has_text="Winter Ranking").click()
+            page.locator(".starter-card", has_text="Midwest").click()
 
             page.locator(".artifact-card", has_text="MSP").wait_for(timeout=15000)
             ranking_card = page.locator(".artifact-card").first
@@ -613,10 +613,10 @@ def test_frontend_backend_agent_end_to_end(fullstack_env: FullStackServer) -> No
             assert session_id and len(session_id) >= 32
 
             # Expand ToolTrace & AssumptionsBox
-            first_assistant = page.locator(".assistant-bubble").last
-            first_assistant.locator(".tool-trace-toggle").click()
+            first_assistant = page.locator(".assistant-row").last
+            first_assistant.locator(".meta-tab-btn", has_text="Tools").click()
             first_assistant.locator(".tool-badge", has_text="rank_hubs").wait_for(timeout=5000)
-            first_assistant.locator(".assumptions-toggle").click()
+            first_assistant.locator(".meta-tab-btn", has_text="Assumptions").click()
             first_assistant.locator(".assumptions-list").wait_for(timeout=5000)
 
             # 3. Follow-up chip in same session -> verifies multi-turn history replay & ScoreBreakdown
@@ -646,7 +646,7 @@ def test_frontend_backend_agent_end_to_end(fullstack_env: FullStackServer) -> No
             page.reload(wait_until="networkidle")
             page.locator(".user-bubble").nth(3).wait_for(timeout=10000)
             assert page.locator(".user-bubble").count() == 4
-            assert page.locator(".assistant-bubble").count() == 4
+            assert page.locator(".assistant-row").count() == 4
             assert page.locator(".stat-card").get_by_text("20.00%").is_visible()
 
             # 6. New Chat clears localStorage & restores starter hero
@@ -668,7 +668,7 @@ def test_frontend_backend_agent_end_to_end(fullstack_env: FullStackServer) -> No
             )
             composer.fill("First allowed turn.")
             page.locator("button.send-btn").click()
-            page.locator(".assistant-bubble", has_text="Portfolio ready").wait_for(timeout=15000)
+            page.locator(".assistant-row", has_text="Portfolio ready").wait_for(timeout=15000)
 
             composer.fill("Second turn should hit 429.")
             page.locator("button.send-btn").click()
