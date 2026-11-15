@@ -73,17 +73,17 @@ async def _get_nws_json(
     return response.json()
 
 
-async def fetch_active_alerts(
+async def fetch_active_alerts_with_status(
     lat: float | Decimal,
     lon: float | Decimal,
     *,
     user_agent: str | None = None,
     client: httpx.AsyncClient | None = None,
-) -> list[dict[str, Any]]:
-    """Fetch active NWS alerts for a coordinate pair.
+) -> tuple[list[dict[str, Any]], bool]:
+    """Fetch active NWS alerts and return `(alerts, ok)`.
 
-    Returns an empty list on transient errors after retries so NWS outages
-    never block scoring.
+    When NWS is unreachable after retries, returns `([], False)` so callers can
+    preserve the previous alert state with an explicit caveat.
     """
     ua = user_agent or get_settings().nws_user_agent
     headers = {
@@ -98,11 +98,32 @@ async def fetch_active_alerts(
         else:
             async with httpx.AsyncClient(timeout=15.0) as owned_client:
                 payload = await _get_nws_json(owned_client, params, headers)
-        return parse_nws_alerts(payload)
+        return parse_nws_alerts(payload), True
     except (httpx.HTTPError, RetryableNWSError) as exc:
         logger.warning(
             "nws_fetch_failed point=%s error=%s",
             params["point"],
             exc,
         )
-        return []
+        return [], False
+
+
+async def fetch_active_alerts(
+    lat: float | Decimal,
+    lon: float | Decimal,
+    *,
+    user_agent: str | None = None,
+    client: httpx.AsyncClient | None = None,
+) -> list[dict[str, Any]]:
+    """Fetch active NWS alerts for a coordinate pair.
+
+    Returns an empty list on transient errors after retries so NWS outages
+    never block scoring.
+    """
+    alerts, _ = await fetch_active_alerts_with_status(
+        lat,
+        lon,
+        user_agent=user_agent,
+        client=client,
+    )
+    return alerts

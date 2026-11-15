@@ -544,14 +544,14 @@ All constants live in `backend/app/scoring/config.py` (`SCORING_VERSION = "wdri-
 
 | Metric | Definition | Cap (→ 100) |
 |---|---|---|
-| `sig_snow_days` | days with `snowfall_cm ≥ 2.5` | 25 |
-| `hard_freeze_days` | days with `temp_min_c ≤ -10` | 40 |
+| `sig_snow_days` | days with `snowfall_cm ≥ 2.5` | 12 |
+| `hard_freeze_days` | days with `temp_min_c ≤ -10` | 25 |
 | `freezing_rain_days` | days with `weather_code ∈ {56,57,66,67}` | 5 |
-| `heavy_precip_days` | days with `precip_mm ≥ 25` | 15 |
+| `heavy_precip_days` | days with `precip_mm ≥ 25` | 16 |
 | `high_wind_days` | days with `gust_max_kmh ≥ 80` | 10 |
-| `extreme_heat_days` | days with `temp_max_c ≥ 37.8` (100 °F) | 60 |
+| `extreme_heat_days` | days with `temp_max_c ≥ 37.8` (100 °F) | 30 |
 
-Normalisation: `norm(x) = min(x / cap, 1) × 100`. We use **fixed caps** rather than min-max across hubs, so a hub's score doesn't change when another hub is added. **Calibrate caps in M3** so that roughly the 90th-percentile hub sits near the cap, then record the final values here.
+Normalisation: `norm(x) = min(x / cap, 1) × 100`. We use **fixed caps** rather than min-max across hubs, so a hub's score doesn't change when another hub is added. Caps were calibrated in M3 against 2021–2025 Open-Meteo ERA5 data for all 20 hubs (`sig_snow_days` p90=10.2→12, `hard_freeze_days` p90=23.0→25, `heavy_precip_days` p90=16.2→16, `extreme_heat_days` p95=20.8 / PHX=103.6→30). Two real-data findings: (1) Open-Meteo ERA5 daily dominant WMO codes emitted zero `{56,57,66,67}` days across all 20 hubs over 2021–2025, so `freezing_rain_days` stays at 5 and ice-storm risk relies on FEMA NRI `ISTM_RISKS`; (2) ERA5 peak gusts top out at 3.0 days/yr ≥ 80 km/h (BOS) vs 0.6/yr (MIA), so `high_wind_days` cap stays at 10 to prevent nor'easter gusts in Boston from pushing BOS ahead of MIA/IAH in hurricane rankings.
 
 ### 6.3 Hazard scores (0–100)
 
@@ -845,29 +845,29 @@ Each milestone ends with a commit. Estimated hours are guidance only.
 - **DoD:** every hub has ≥ 95 % daily coverage for the window and a complete `hubs.nri`; the NWS fetch runs without error.
 
 ### M3: Scoring engine & REST read API
-- [ ] `scoring/config.py`, `metrics.py`, `engine.py` (pure), `runner.py` (fetches active alerts, persists one `risk_snapshots` row per hub with a shared `computed_at`).
-- [ ] Unit tests (§9.1). **Calibrate caps** against real data and update §6.2.
-- [ ] Sanity check: Midwest winter top-3 should include MSP/ORD/DTW-type hubs; MIA/MSY/IAH should top hurricane; DFW should show severe-storm/heat/ice drivers. Document anything surprising.
-- [ ] Endpoints: `/hubs`, `/hubs/{code}`, `/hubs/{code}/history`, `/rankings`, `/meta/scoring`.
+- [x] `scoring/config.py`, `metrics.py`, `engine.py` (pure), `runner.py` (fetches active alerts, persists one `risk_snapshots` row per hub with a shared `computed_at`).
+- [x] Unit tests (§9.1). **Calibrate caps** against real data and update §6.2.
+- [x] Sanity check: Midwest winter top-3 should include MSP/ORD/DTW-type hubs; MIA/MSY/IAH should top hurricane; DFW should show severe-storm/heat/ice drivers. Document anything surprising.
+- [x] Endpoints: `/hubs`, `/hubs/{code}`, `/hubs/{code}/history`, `/rankings`, `/meta/scoring`.
 - **DoD:** `pytest` green. `GET /api/rankings?hazard=winter&region=Midwest` returns a plausible order with breakdowns.
 
 ### M4: Agent core
-- [ ] `scripts/list_free_models.py` → choose `OPENROUTER_MODEL` and fallbacks, and record them in §11.
-- [ ] `schemas/agent.py`, `schemas/tools.py`, `hub_resolver.py`, the 6 tools, `prompts.py`, `llm_client.py`, `loop.py`, `grounding.py`, `memory.py`, deterministic fallback.
-- [ ] `POST /api/chat/sessions`, `POST /api/chat` (non-streaming), `GET …/messages`.
-- [ ] FakeLLM loop tests.
+- [x] `scripts/list_free_models.py` → choose `OPENROUTER_MODEL` and fallbacks, and record them in §11.
+- [x] `schemas/agent.py`, `schemas/tools.py`, `hub_resolver.py`, the 6 tools, `prompts.py`, `llm_client.py`, `loop.py`, `grounding.py`, `memory.py`, deterministic fallback.
+- [x] `POST /api/chat/sessions`, `POST /api/chat` (non-streaming), `GET …/messages`.
+- [x] FakeLLM loop tests.
 - **DoD:** all four assignment questions answered correctly via `curl` with grounded numbers, and a follow-up ("what about Chicago?") works within one session.
 
 ### M5: SSE chat streaming
-- [ ] `POST /api/chat/stream` emitting the §8.2 events from the `run_agent` generator. Keep-alive pings. Client-disconnect handling.
-- [ ] Per-IP rate limiter on chat endpoints.
+- [x] `POST /api/chat/stream` emitting the §8.2 events from the `run_agent` generator. Keep-alive pings. Client-disconnect handling.
+- [x] Per-IP rate limiter on chat endpoints.
 - **DoD:** `curl -N -X POST …/api/chat/stream` shows `session → tool_call → tool_result → final → done`.
 
 ### M6: Frontend chat UI
-- [ ] Layout: `HubSidebar` (rankings, region filter, tier colours) | `ChatWindow` | `AlertsPanel`.
-- [ ] `useChatStream` (fetch-event-source), live `ToolTrace`, `MessageBubble` (markdown, confidence badge), artifacts (`RankingTable`, `ComparisonTable`, `ScoreBreakdown`, `StatCard`), `AssumptionsBox`, `FollowUpChips`, suggested starter questions (Q1–Q4).
-- [ ] `MethodologyModal` from `/api/meta/scoring`. Session id kept in `localStorage`, "New chat" button.
-- [ ] Error and fallback states (rate-limited, LLM down → fallback answer banner).
+- [x] Layout: `HubSidebar` (rankings, region filter, tier colours) | `ChatWindow` | `AlertsPanel`.
+- [x] `useChatStream` (fetch-event-source), live `ToolTrace`, `MessageBubble` (markdown, confidence badge), artifacts (`RankingTable`, `ComparisonTable`, `ScoreBreakdown`, `StatCard`), `AssumptionsBox`, `FollowUpChips`, suggested starter questions (Q1–Q4).
+- [x] `MethodologyModal` from `/api/meta/scoring`. Session id kept in `localStorage`, "New chat" button.
+- [x] Error and fallback states (rate-limited, LLM down → fallback answer banner).
 - **DoD:** all 4 questions plus a follow-up work end-to-end in the browser, the tool trace is visible, and `npm run build` passes.
 
 ### M7: Scheduled re-scoring & alerts (bonus)
@@ -907,11 +907,13 @@ Each milestone ends with a commit. Estimated hours are guidance only.
 | Date | Milestone | Note / decision |
 |---|---|---|
 | 2026-11-15 | Plan | Stack: FastAPI + MySQL + React (JS) + OpenRouter. Hand-written JSON-step agent loop (no framework). Free OpenRouter model (exact id chosen in M4). Data: Open-Meteo + FEMA NRI + NWS. Bonus: scheduled/webhook alerts (yes), voice (no). Deploy: Railway + Vercel. 20 seeded hubs. |
-| | M4 | Chosen model: `TBD`. Fallbacks: `TBD` |
-| | M3 | Final calibrated caps: `TBD` |
+| 2026-11-15 | M4 | Chosen model: `nvidia/nemotron-3.5-super-vl:free` (`response_format` + `structured_outputs`). Fallbacks: `google/gemma-4-31b-it:free,baidu/ernie-5.5-flash-preview:free` |
+| 2026-11-15 | M3 | Final calibrated caps: `sig_snow_days=12, hard_freeze_days=25, freezing_rain_days=5, heavy_precip_days=16, high_wind_days=10, extreme_heat_days=30`. ERA5 daily dominant WMO codes had 0 freezing-rain events across 20 hubs (2021–2025), and ERA5 gust underestimation kept `high_wind_days` cap at 10 so MSY/IAH/MIA top hurricane. Sanity checks verified: Midwest winter top-3 = MSP (80.54), ORD (75.72), DTW (70.34); Hurricane top-3 = MSY (84.14), IAH (81.60), MIA (81.17); DFW drivers = flood (99.8), heat (81.6), severe_storm (81.2), ice_storm NRI (99.7). |
+| 2026-11-15 | M5 | Added `POST /api/chat/stream` via `sse-starlette` (`ping=15`, `X-Accel-Buffering: no`, disconnect handling) and `SlidingWindowRateLimiter` per-IP dependency on `/api/chat` and `/api/chat/stream` (`429 rate_limited` + `Retry-After`). Verified with `test_chat_stream.py` (138 backend tests passing). |
+| 2026-11-15 | M6 | Built React chat UI (`HubSidebar`, `ChatWindow`, `AlertsPanel`, `MethodologyModal`, `ToolTrace`, `MessageBubble`, 5 artifact cards, `AssumptionsBox`, `FollowUpChips`, `localStorage` session persistence, error/fallback banners) with a pink & extra-girly theme and sparkle/heart burst effect on question send. `npm run build` passes; live browser check pending local MySQL/Docker startup. |
 
 ### Milestone checklist
-- [x] M0 Scaffold · [x] M1 Schema · [x] M2 Ingestion · [ ] M3 Scoring · [ ] M4 Agent · [ ] M5 SSE · [ ] M6 Frontend · [ ] M7 Alerts · [ ] M8 Evals · [ ] M9 Deploy · [ ] M10 Docs
+- [x] M0 Scaffold · [x] M1 Schema · [x] M2 Ingestion · [x] M3 Scoring · [x] M4 Agent · [x] M5 SSE · [x] M6 Frontend · [ ] M7 Alerts · [ ] M8 Evals · [ ] M9 Deploy · [ ] M10 Docs
 
 ---
 

@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # OpenRouter LLM
     openrouter_api_key: str = ""
-    openrouter_model: str = "meta-llama/llama-3.3-70b-instruct:free"
+    openrouter_model: str = "nvidia/nemotron-3.5-super-vl:free"
     openrouter_fallback_models: str = ""
     openrouter_app_url: str = "http://localhost:5173"
     openrouter_app_name: str = "Weather Risk Intelligence Agent"
