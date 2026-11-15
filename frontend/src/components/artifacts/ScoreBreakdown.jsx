@@ -12,7 +12,7 @@ export default function ScoreBreakdown({ artifact }) {
   return (
     <div className="artifact-card">
       <div className="artifact-header">
-        <span className="artifact-title">🌸 {artifact.title}</span>
+        <span className="artifact-title">{artifact.title}</span>
         <span className="artifact-meta">
           Rank #{data.rank} of {data.total_hubs} · {data.region}
         </span>

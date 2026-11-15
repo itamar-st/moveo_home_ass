@@ -787,9 +787,9 @@ def build_artifacts(tool_results: Sequence[ToolResult]) -> list[Artifact]:
     return artifacts
 
 
-def compact_tool_observation(result: ToolResult) -> str:
-    """Serialize a ToolResult concisely for feeding into the next LLM step."""
-    payload = {
+def compact_tool_observation(result: ToolResult, *, max_chars: int = 8_000) -> str:
+    """Serialize a ToolResult concisely for feeding into the next LLM step, bounded by `max_chars`."""
+    payload: dict[str, Any] = {
         "ok": result.ok,
         "tool": result.tool_name,
         "summary": result.summary,
@@ -798,7 +798,23 @@ def compact_tool_observation(result: ToolResult) -> str:
         "sources": result.sources,
         "data_window": result.data_window,
     }
-    return json.dumps(payload, default=str)
+    serialized = json.dumps(payload, default=str)
+    if len(serialized) <= max_chars:
+        return serialized
+
+    compact_payload: dict[str, Any] = {
+        "ok": result.ok,
+        "tool": result.tool_name,
+        "summary": result.summary,
+        "data_truncated": True,
+        "caveats": result.caveats,
+        "sources": result.sources,
+        "data_window": result.data_window,
+    }
+    compact_serialized = json.dumps(compact_payload, default=str)
+    if len(compact_serialized) <= max_chars:
+        return compact_serialized
+    return compact_serialized[:max_chars]
 
 
 def compact_memory_tool_line(name: str, arguments: dict[str, Any], result: ToolResult) -> str:

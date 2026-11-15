@@ -235,6 +235,28 @@ async def test_admin_auth_and_unknown_hub(m7_env: dict) -> None:
     assert resp.status_code == 404
 
 
+async def test_admin_fails_closed_when_token_unconfigured(
+    m7_env: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.config import get_settings
+
+    client: AsyncClient = m7_env["client"]
+    monkeypatch.setenv("ADMIN_TOKEN", "")
+    get_settings.cache_clear()
+    try:
+        resp = await client.post(
+            "/api/admin/rescore",
+            headers={"X-Admin-Token": "change-me-admin-token"},
+            json={"refresh_nws": False},
+        )
+        assert resp.status_code == 503
+        assert resp.json()["error"]["code"] == "admin_disabled"
+    finally:
+        monkeypatch.setenv("ADMIN_TOKEN", "secret-admin-token")
+        get_settings.cache_clear()
+
+
 @respx.mock
 async def test_simulate_alert_creates_db_alert_broadcasts_and_posts_webhook(
     m7_env: dict,

@@ -10,7 +10,7 @@ export default function StatCard({ artifact }) {
   return (
     <div className="artifact-card stat-card">
       <div className="artifact-header">
-        <span className="artifact-title">✨ {artifact.title}</span>
+        <span className="artifact-title">{artifact.title}</span>
         <span className="artifact-meta">{periodRange}</span>
       </div>
 

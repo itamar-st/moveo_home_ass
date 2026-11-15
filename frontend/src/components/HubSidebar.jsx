@@ -31,39 +31,34 @@ export default function HubSidebar({
   return (
     <aside className="sidebar-panel">
       <div className="panel-header">
-        <div>
-          <h2>🌸 Portfolio Hubs</h2>
-          <p className="panel-subtitle">20 US Logistics Hubs · WDRI v1</p>
-        </div>
+        <h2>Portfolio Hubs</h2>
+        <span className="panel-count">{rankings.length}</span>
       </div>
 
       <div className="filter-stack">
-        <label className="filter-field">
-          <span>Region</span>
-          <select value={region} onChange={(e) => onRegionChange(e.target.value)}>
-            <option value="">All Regions (20)</option>
-            {REGIONS.filter(Boolean).map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="filter-row-two">
+          <label className="filter-field">
+            <span>Region</span>
+            <select value={region} onChange={(e) => onRegionChange(e.target.value)}>
+              <option value="">All Regions</option>
+              {REGIONS.filter(Boolean).map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <div className="filter-field">
-          <span>Hazard Family</span>
-          <div className="hazard-pills">
-            {HAZARDS.map((h) => (
-              <button
-                key={h}
-                type="button"
-                className={`pill-btn ${hazard === h ? "active" : ""}`}
-                onClick={() => onHazardChange(h)}
-              >
-                {h === "overall" ? "Overall" : formatHazardLabel(h)}
-              </button>
-            ))}
-          </div>
+          <label className="filter-field">
+            <span>Hazard</span>
+            <select value={hazard} onChange={(e) => onHazardChange(e.target.value)}>
+              {HAZARDS.map((h) => (
+                <option key={h} value={h}>
+                  {h === "overall" ? "Overall" : formatHazardLabel(h)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         {hazard === "overall" && (
@@ -90,7 +85,7 @@ export default function HubSidebar({
         <div className="hub-detail-card">
           <div className="hub-detail-top">
             <strong>
-              🎀 {selectedHubDetail?.city || selectedHubCode} ({selectedHubCode})
+              {selectedHubDetail?.city || selectedHubCode} ({selectedHubCode})
             </strong>
             <button
               type="button"
@@ -102,7 +97,7 @@ export default function HubSidebar({
             </button>
           </div>
 
-          {loadingDetail && <p className="muted-note">Loading hub breakdown…</p>}
+          {loadingDetail && <p className="muted-note">Loading breakdown…</p>}
 
           {!loadingDetail && selectedHubDetail && (
             <>
@@ -146,7 +141,7 @@ export default function HubSidebar({
                   )
                 }
               >
-                ✨ Explain {selectedHubDetail.code} in Chat
+                Explain {selectedHubDetail.code} in Chat
               </button>
             </>
           )}
@@ -154,8 +149,8 @@ export default function HubSidebar({
       )}
 
       <div className="hub-list">
-        {loading && <div className="muted-note">Loading rankings… ✨</div>}
-        {error && <div className="error-inline">⚠️ {error}</div>}
+        {loading && <div className="muted-note">Loading rankings…</div>}
+        {error && <div className="error-inline">{error}</div>}
         {!loading && !error && rankings.length === 0 && (
           <div className="muted-note">No scored snapshots available yet.</div>
         )}
@@ -170,11 +165,11 @@ export default function HubSidebar({
               onClick={() => onSelectHub(isSelected ? null : hub.code)}
             >
               <div className="hub-card-top">
-                <span className="hub-rank-badge">#{hub.rank}</span>
+                <span className="hub-rank-badge">{hub.rank}</span>
                 <span className="hub-name">
                   <strong>{hub.code}</strong> · {hub.city}, {hub.state}
                 </span>
-                <span className={`tier-pill ${tierClass(hub.tier)}`}>{hub.tier}</span>
+                <span className="hub-score-val">{Number(hub.score || 0).toFixed(1)}</span>
               </div>
               <div className="hub-card-score-row">
                 <div className="mini-bar-track">
@@ -183,9 +178,8 @@ export default function HubSidebar({
                     style={{ width: `${Math.min(100, Math.max(0, Number(hub.score || 0)))}%` }}
                   />
                 </div>
-                <span className="hub-score-val">{Number(hub.score || 0).toFixed(1)}</span>
+                <span className={`tier-pill ${tierClass(hub.tier)}`}>{hub.tier}</span>
               </div>
-              {hub.top_driver && <div className="hub-driver">{hub.top_driver}</div>}
             </button>
           );
         })}

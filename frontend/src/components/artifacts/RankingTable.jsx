@@ -8,7 +8,7 @@ export default function RankingTable({ artifact }) {
     return (
       <div className="artifact-card">
         <div className="artifact-header">
-          <span className="artifact-title">👑 {artifact?.title || "Hub Ranking"}</span>
+          <span className="artifact-title">{artifact?.title || "Hub Ranking"}</span>
         </div>
         <p className="muted-note">No matching hubs scored yet.</p>
       </div>
@@ -18,7 +18,7 @@ export default function RankingTable({ artifact }) {
   return (
     <div className="artifact-card">
       <div className="artifact-header">
-        <span className="artifact-title">👑 {artifact.title}</span>
+        <span className="artifact-title">{artifact.title}</span>
         <span className="artifact-meta">
           {formatHazardLabel(data.hazard)} · {data.score_kind || "structural"}
         </span>

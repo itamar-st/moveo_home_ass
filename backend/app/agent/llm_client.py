@@ -93,8 +93,8 @@ class OpenRouterLLMClient:
             )
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=8),
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=0.5, min=0.5, max=2),
         retry=retry_if_exception(_is_retryable_openai_error),
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
@@ -119,6 +119,7 @@ class OpenRouterLLMClient:
             "model": model,
             "messages": messages,
             "temperature": 0.1,
+            "max_tokens": self._settings.llm_max_tokens,
         }
         if response_format is not None:
             kwargs["response_format"] = response_format

@@ -45,7 +45,7 @@ export default function MethodologyModal({ isOpen, onClose }) {
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <h2>🎀 WDRI Scoring Methodology</h2>
+            <h2>WDRI Scoring Methodology</h2>
             <p className="panel-subtitle">
               Deterministic Weather Disruption Risk Index ({meta?.scoring_version || "wdri-v1"})
             </p>
@@ -61,13 +61,13 @@ export default function MethodologyModal({ isOpen, onClose }) {
         </div>
 
         <div className="modal-body">
-          {loading && <p className="muted-note">Loading scoring parameters… ✨</p>}
-          {error && <p className="error-inline">⚠️ {error}</p>}
+          {loading && <p className="muted-note">Loading scoring parameters…</p>}
+          {error && <p className="error-inline">{error}</p>}
 
           {meta && (
             <>
               <section className="meta-section">
-                <h3>🌸 Composite Formula</h3>
+                <h3>Composite Formula</h3>
                 <p className="formula-box">
                   <code>
                     WDRI = {meta.weights?.composite_blend?.weighted_avg ?? 0.7} × Σ(w_h ×
@@ -86,7 +86,7 @@ export default function MethodologyModal({ isOpen, onClose }) {
               </section>
 
               <section className="meta-section">
-                <h3>✨ Risk Tiers &amp; Live Alert Bumps</h3>
+                <h3>Risk Tiers &amp; Live Alert Bumps</h3>
                 <div className="meta-two-col">
                   <div>
                     <ul className="meta-list">
@@ -110,7 +110,7 @@ export default function MethodologyModal({ isOpen, onClose }) {
               </section>
 
               <section className="meta-section">
-                <h3>📏 Observed Metric Thresholds &amp; Caps (5-yr mean)</h3>
+                <h3>Observed Metric Thresholds &amp; Caps (5-yr mean)</h3>
                 <div className="meta-chips-grid">
                   {Object.entries(meta.caps || {}).map(([metric, cap]) => (
                     <div key={metric} className="meta-chip">
@@ -122,7 +122,7 @@ export default function MethodologyModal({ isOpen, onClose }) {
               </section>
 
               <section className="meta-section">
-                <h3>📡 Public Data Sources</h3>
+                <h3>Public Data Sources</h3>
                 <ul className="meta-list">
                   {(meta.data_sources || []).map((src, idx) => (
                     <li key={idx}>
@@ -133,7 +133,7 @@ export default function MethodologyModal({ isOpen, onClose }) {
               </section>
 
               <section className="meta-section">
-                <h3>🌷 Explicit Assumptions &amp; Uncertainty</h3>
+                <h3>Explicit Assumptions &amp; Uncertainty</h3>
                 <ul className="meta-list">
                   {(meta.assumptions || []).map((a, idx) => (
                     <li key={idx}>{a}</li>

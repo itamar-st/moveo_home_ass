@@ -18,6 +18,7 @@ from app.agent.grounding import check_final_answer, requires_tool_call
 from app.agent.llm_client import LLMClientProtocol, LLMUnavailableError
 from app.agent.memory import (
     create_session,
+    format_user_message,
     get_session,
     load_history_for_llm,
     persist_assistant_message,
@@ -238,7 +239,7 @@ async def run_agent(
     messages: list[dict[str, str]] = [
         {"role": "system", "content": system_prompt},
         *history_messages,
-        {"role": "user", "content": user_message},
+        {"role": "user", "content": format_user_message(user_message)},
     ]
 
     tool_results: list[ToolResult] = []
@@ -247,9 +248,15 @@ async def run_agent(
     supports_model_kwarg = "model" in inspect.signature(llm_client.complete).parameters
     fallback_reason: str | None = None
     final_emitted = False
+    llm_calls = 0
+    max_llm_calls = step_budget + 3
 
     try:
         for step_num in range(1, step_budget + 1):
+            if llm_calls >= max_llm_calls:
+                fallback_reason = f"LLM call budget ({max_llm_calls}) exhausted"
+                break
+
             yield AgentEvent(
                 event="status",
                 data={"stage": "thinking", "step": step_num},
@@ -260,6 +267,10 @@ async def run_agent(
             repair_messages = list(messages)
 
             for attempt in range(MAX_REPAIRS_PER_STEP + 1):
+                if llm_calls >= max_llm_calls:
+                    fallback_reason = f"LLM call budget ({max_llm_calls}) exhausted"
+                    break
+                llm_calls += 1
                 try:
                     if supports_model_kwarg:
                         llm_resp = await llm_client.complete(  # type: ignore[call-arg]

@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function AssumptionsBox({ assumptions = [], caveats = [] }) {
+export default function AssumptionsBox({ assumptions = [], caveats = [], embedded = false }) {
   const [open, setOpen] = useState(false);
   const items = [...(assumptions || [])];
   for (const c of caveats || []) {
@@ -13,6 +13,16 @@ export default function AssumptionsBox({ assumptions = [], caveats = [] }) {
     return null;
   }
 
+  if (embedded) {
+    return (
+      <ul className="assumptions-list embedded">
+        {items.map((item, idx) => (
+          <li key={idx}>{item}</li>
+        ))}
+      </ul>
+    );
+  }
+
   return (
     <div className="assumptions-box">
       <button
@@ -20,7 +30,7 @@ export default function AssumptionsBox({ assumptions = [], caveats = [] }) {
         className="assumptions-toggle"
         onClick={() => setOpen((v) => !v)}
       >
-        <span>🌷 Assumptions &amp; Scope ({items.length})</span>
+        <span>Assumptions &amp; Scope ({items.length})</span>
         <span>{open ? "▾" : "▸"}</span>
       </button>
       {open && (

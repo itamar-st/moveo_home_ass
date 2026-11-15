@@ -253,7 +253,15 @@ async def test_chat_stream_llm_unavailable_emits_error_and_fallback(
         assert final_payload["answer"]["confidence"] == "low"
 
 
-async def test_chat_rate_limiter_enforces_per_ip_limit(stream_db: AsyncSession) -> None:
+async def test_chat_rate_limiter_enforces_per_ip_limit(
+    stream_db: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.config import get_settings
+
+    monkeypatch.setenv("TRUST_PROXY_HEADERS", "true")
+    get_settings.cache_clear()
+
     now = [100.0]
     fake_llm = ScriptedStreamLLM(
         [
@@ -291,44 +299,129 @@ async def test_chat_rate_limiter_enforces_per_ip_limit(stream_db: AsyncSession) 
     app.dependency_overrides[get_db] = override_db
     app.dependency_overrides[get_llm_client] = lambda: fake_llm
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # IP 1: 2 requests allowed, 3rd blocked with 429
-        r1 = await client.post(
-            "/api/chat",
-            json={"message": "Hello"},
-            headers={"X-Forwarded-For": "10.0.0.1"},
-        )
-        assert r1.status_code == 200
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            # Spoofed leftmost hop is ignored; rightmost hop (10.0.0.1) is rate-limited
+            r1 = await client.post(
+                "/api/chat",
+                json={"message": "Hello"},
+                headers={"X-Forwarded-For": "198.51.100.1, 10.0.0.1"},
+            )
+            assert r1.status_code == 200
 
-        r2 = await client.post(
-            "/api/chat/stream",
-            json={"message": "Hello again"},
-            headers={"X-Forwarded-For": "10.0.0.1"},
-        )
-        assert r2.status_code == 200
+            r2 = await client.post(
+                "/api/chat/stream",
+                json={"message": "Hello again"},
+                headers={"X-Forwarded-For": "198.51.100.2, 10.0.0.1"},
+            )
+            assert r2.status_code == 200
 
-        r3 = await client.post(
-            "/api/chat/stream",
-            json={"message": "One too many"},
-            headers={"X-Forwarded-For": "10.0.0.1"},
-        )
-        assert r3.status_code == 429
-        assert r3.json()["error"]["code"] == "rate_limited"
-        assert int(r3.headers["Retry-After"]) >= 1
+            r3 = await client.post(
+                "/api/chat/stream",
+                json={"message": "One too many"},
+                headers={"X-Forwarded-For": "198.51.100.3, 10.0.0.1"},
+            )
+            assert r3.status_code == 429
+            assert r3.json()["error"]["code"] == "rate_limited"
+            assert int(r3.headers["Retry-After"]) >= 1
 
-        # Distinct IP is unaffected
-        r_other = await client.post(
-            "/api/chat",
-            json={"message": "Hello from another IP"},
-            headers={"X-Forwarded-For": "10.0.0.2"},
-        )
-        assert r_other.status_code == 200
+            # Distinct IP is unaffected
+            r_other = await client.post(
+                "/api/chat",
+                json={"message": "Hello from another IP"},
+                headers={"X-Forwarded-For": "10.0.0.2"},
+            )
+            assert r_other.status_code == 200
 
-        # Advancing clock past 60s restores quota
-        now[0] += 61.0
-        r_after = await client.post(
-            "/api/chat",
-            json={"message": "After window"},
-            headers={"X-Forwarded-For": "10.0.0.1"},
-        )
-        assert r_after.status_code == 200
+            # Advancing clock past 60s restores quota
+            now[0] += 61.0
+            r_after = await client.post(
+                "/api/chat",
+                json={"message": "After window"},
+                headers={"X-Forwarded-For": "10.0.0.1"},
+            )
+            assert r_after.status_code == 200
+    finally:
+        get_settings.cache_clear()
+
+
+async def test_chat_rate_limiter_ignores_forwarded_for_when_untrusted(
+    stream_db: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.config import get_settings
+
+    monkeypatch.setenv("TRUST_PROXY_HEADERS", "false")
+    get_settings.cache_clear()
+
+    now = [100.0]
+    fake_llm = ScriptedStreamLLM(
+        [
+            json.dumps(
+                {
+                    "rationale": "Direct reply",
+                    "action": "final_answer",
+                    "final_answer": {
+                        "answer_markdown": "Ready to help.",
+                        "intent": "general",
+                        "hubs": [],
+                        "key_points": ["Portfolio covers 20 US hubs."],
+                        "reasoning": ["General assistance query."],
+                        "assumptions": [],
+                        "confidence": "high",
+                        "confidence_rationale": "No data lookup needed.",
+                        "follow_ups": [],
+                    },
+                }
+            )
+            for _ in range(3)
+        ]
+    )
+
+    app = create_app()
+    app.state.chat_rate_limiter = SlidingWindowRateLimiter(
+        limit=1,
+        window_seconds=60.0,
+        clock=lambda: now[0],
+    )
+
+    async def override_db() -> AsyncGenerator[AsyncSession, None]:
+        yield stream_db
+
+    app.dependency_overrides[get_db] = override_db
+    app.dependency_overrides[get_llm_client] = lambda: fake_llm
+
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            r1 = await client.post(
+                "/api/chat",
+                json={"message": "First"},
+                headers={"X-Forwarded-For": "10.0.0.1"},
+            )
+            assert r1.status_code == 200
+
+            # Rotating X-Forwarded-For must NOT bypass rate limiting when proxy headers are untrusted
+            r2 = await client.post(
+                "/api/chat",
+                json={"message": "Second"},
+                headers={"X-Forwarded-For": "10.0.0.99"},
+            )
+            assert r2.status_code == 429
+    finally:
+        get_settings.cache_clear()
+
+
+async def test_rate_limiter_bounds_bucket_memory() -> None:
+    now = [0.0]
+    limiter = SlidingWindowRateLimiter(
+        limit=5,
+        window_seconds=60.0,
+        max_buckets=3,
+        clock=lambda: now[0],
+    )
+    assert (await limiter.check("ip1"))[0] is True
+    assert (await limiter.check("ip2"))[0] is True
+    assert (await limiter.check("ip3"))[0] is True
+    assert (await limiter.check("ip4"))[0] is True
+    assert len(limiter._buckets) == 3
+    assert "ip1" not in limiter._buckets

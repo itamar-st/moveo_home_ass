@@ -1,67 +1,44 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useVoiceInput } from "../hooks/useVoiceInput.js";
+import { useVoiceOutput } from "../hooks/useVoiceOutput.js";
 import MessageBubble from "./MessageBubble.jsx";
 import ToolTrace from "./ToolTrace.jsx";
 
 const STARTER_QUESTIONS = [
   {
     id: "q1",
-    tag: "Winter Ranking",
-    icon: "❄️",
     text: "Which hubs in the Midwest are most exposed to winter disruption?",
   },
   {
     id: "q2",
-    tag: "Hub Comparison",
-    icon: "🌀",
     text: "Compare Miami and Houston in terms of hurricane and flood exposure.",
   },
   {
     id: "q3",
-    tag: "Weather Stat",
-    icon: "🏔️",
     text: "What percentage of days in Denver last year had snowfall?",
   },
   {
     id: "q4",
-    tag: "Driver Breakdown",
-    icon: "⚡",
     text: "Why is the Dallas hub's weather disruption risk high?",
   },
 ];
 
-const SPARKLE_EMOJIS = ["💖", "✨", "🌸", "🎀", "💫", "🩷", "🌷"];
-
-function createBurstParticles(burstId) {
-  return Array.from({ length: 14 }, (_, idx) => {
-    const angle = (-155 + (idx / 13) * 140) * (Math.PI / 180);
-    const distance = 44 + (idx % 4) * 18;
-    return {
-      id: `${burstId}-${idx}`,
-      emoji: SPARKLE_EMOJIS[idx % SPARKLE_EMOJIS.length],
-      tx: `${Math.round(Math.cos(angle) * distance)}px`,
-      ty: `${Math.round(Math.sin(angle) * distance - 18)}px`,
-      rot: `${(idx % 2 === 0 ? 1 : -1) * (15 + (idx % 5) * 12)}deg`,
-      delay: `${(idx % 4) * 35}ms`,
-    };
-  });
-}
-
 function formatStageLabel(statusStage) {
-  if (!statusStage) return "Thinking… 🌸";
+  if (!statusStage) return "Thinking…";
   switch (statusStage.stage) {
     case "calling_tool":
-      return `Running deterministic tool: ${statusStage.detail || "lookup"}… ✨`;
+      return `Running ${statusStage.detail || "tool"}…`;
     case "repairing_output":
-      return "Validating & refining structured output… 🎀";
+      return "Validating output…";
     case "fallback":
-      return "Building deterministic backup answer… 🌷";
+      return "Building fallback summary…";
     default:
-      return `Analyzing step ${statusStage.step || 1}… 💖`;
+      return `Analyzing (step ${statusStage.step || 1})…`;
   }
 }
 
 export default function ChatWindow({
-  sessionId,
+  sessionId: _sessionId,
   messages,
   loadingHistory,
   isStreaming,
@@ -69,7 +46,7 @@ export default function ChatWindow({
   liveTrace,
   errorState,
   onClearError,
-  sendBurstKey,
+  sendBurstKey: _sendBurstKey,
   availableModels = [],
   selectedModel = "",
   onSelectModel,
@@ -78,38 +55,63 @@ export default function ChatWindow({
   onOpenMethodology,
 }) {
   const [draft, setDraft] = useState("");
-  const [particles, setParticles] = useState([]);
-  const [buttonPopping, setButtonPopping] = useState(false);
 
   const bottomRef = useRef(null);
+  const lastSpokenMsgIdRef = useRef(null);
+  const wasStreamingRef = useRef(false);
+
+  const handleVoiceTranscript = useCallback((transcript) => {
+    setDraft((prev) => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
+  }, []);
+
+  const voiceInput = useVoiceInput({ onTranscript: handleVoiceTranscript });
+  const voiceOutput = useVoiceOutput();
+
+  useEffect(() => {
+    const assistantMessages = messages.filter((m) => m.role === "assistant");
+    const latest = assistantMessages[assistantMessages.length - 1];
+
+    if (loadingHistory) {
+      if (latest) {
+        lastSpokenMsgIdRef.current = latest.id;
+      }
+      return;
+    }
+
+    if (wasStreamingRef.current && !isStreaming && latest && latest.id !== lastSpokenMsgIdRef.current) {
+      lastSpokenMsgIdRef.current = latest.id;
+      if (voiceOutput.autoSpeak && latest.answer?.answer_markdown) {
+        voiceOutput.speak(latest.answer.answer_markdown, latest.id);
+      }
+    } else if (!wasStreamingRef.current && latest && !lastSpokenMsgIdRef.current) {
+      lastSpokenMsgIdRef.current = latest.id;
+    }
+
+    wasStreamingRef.current = isStreaming;
+  }, [messages, isStreaming, loadingHistory, voiceOutput]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, liveTrace, isStreaming]);
-
-  useEffect(() => {
-    if (!sendBurstKey) {
-      return;
-    }
-    setParticles(createBurstParticles(sendBurstKey));
-    setButtonPopping(true);
-
-    const popTimer = window.setTimeout(() => setButtonPopping(false), 450);
-    const clearTimer = window.setTimeout(() => setParticles([]), 950);
-    return () => {
-      window.clearTimeout(popTimer);
-      window.clearTimeout(clearTimer);
-    };
-  }, [sendBurstKey]);
 
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (!draft.trim() || isStreaming) {
       return;
     }
+    if (voiceInput.isListening) {
+      voiceInput.stopListening();
+    }
     const text = draft;
     setDraft("");
     onSendMessage(text);
+  };
+
+  const handleNewChatClick = () => {
+    voiceInput.stopListening();
+    voiceOutput.stop();
+    lastSpokenMsgIdRef.current = null;
+    onNewChat();
   };
 
   const handleKeyDown = (e) => {
@@ -123,16 +125,8 @@ export default function ChatWindow({
     <section className="chat-panel">
       <header className="chat-header">
         <div className="chat-title-group">
-          <div className="brand-badge" aria-hidden="true">
-            🎀
-          </div>
-          <div>
-            <h1>Weather Risk Intelligence Agent</h1>
-            <p className="chat-subtitle">
-              US Logistics Resilience Analyst · Deterministic WDRI v1
-              {sessionId ? ` · Session ${sessionId.slice(0, 8)}` : ""}
-            </p>
-          </div>
+          <h1>Weather Risk Agent</h1>
+          <span className="version-tag">WDRI v1</span>
         </div>
 
         <div className="chat-header-actions">
@@ -152,7 +146,7 @@ export default function ChatWindow({
               >
                 {availableModels.map((m) => (
                   <option key={m.id} value={m.id}>
-                    🤖 {m.label}
+                    {m.label}
                   </option>
                 ))}
               </select>
@@ -160,156 +154,180 @@ export default function ChatWindow({
           )}
           <button
             type="button"
-            className="ghost-pink-btn"
-            onClick={onOpenMethodology}
+            className={`toolbar-btn ${voiceOutput.autoSpeak ? "active" : ""}`}
+            onClick={voiceOutput.toggleAutoSpeak}
+            disabled={!voiceOutput.isSupported}
+            aria-pressed={voiceOutput.autoSpeak}
+            aria-label={voiceOutput.autoSpeak ? "Auto-Read On" : "Auto-Read Off"}
+            title={
+              voiceOutput.isSupported
+                ? "Automatically read assistant replies aloud"
+                : "Speech synthesis is not supported in this browser"
+            }
           >
-            📐 Methodology
+            {voiceOutput.autoSpeak ? "🔊 Auto-Read" : "🔇 Auto-Read"}
           </button>
           <button
             type="button"
-            className="soft-pink-btn"
-            onClick={onNewChat}
+            className="toolbar-btn"
+            onClick={onOpenMethodology}
+          >
+            Methodology
+          </button>
+          <button
+            type="button"
+            className="primary-compact-btn"
+            onClick={handleNewChatClick}
             disabled={isStreaming && messages.length === 0}
           >
-            ✨ New Chat
+            New chat
           </button>
         </div>
       </header>
 
       <div className="chat-scroll-area">
-        {loadingHistory && (
-          <div className="center-note">Restoring your conversation… 🌸</div>
-        )}
+        <div className="chat-column">
+          {loadingHistory && (
+            <div className="center-note">Restoring conversation…</div>
+          )}
 
-        {!loadingHistory && messages.length === 0 && (
-          <div className="empty-hero">
-            <div className="hero-pill">✨ Deterministic Weather &amp; Hazard Analytics</div>
-            <h2>Which hub needs resilience investment first?</h2>
-            <p>
-              Ask about any of our 20 US distribution hubs across winter, hurricane, flood,
-              severe storm, or extreme heat exposure. Every number is computed by verified
-              tools—never guessed.
-            </p>
+          {!loadingHistory && messages.length === 0 && (
+            <div className="empty-hero">
+              <h2>Ask about hub weather risk</h2>
+              <p>
+                Analyze 20 US distribution hubs across winter, hurricane, flood, severe storm, and
+                heat exposure.
+              </p>
 
-            <div className="starter-grid">
-              {STARTER_QUESTIONS.map((q) => (
-                <button
-                  key={q.id}
-                  type="button"
-                  className="starter-card"
-                  disabled={isStreaming}
-                  onClick={() => onSendMessage(q.text)}
-                >
-                  <div className="starter-top">
-                    <span>{q.icon}</span>
-                    <span className="starter-tag">{q.tag}</span>
-                  </div>
-                  <div className="starter-text">{q.text}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {messages.map((msg) => (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            onSelectFollowUp={onSendMessage}
-            isStreaming={isStreaming}
-          />
-        ))}
-
-        {isStreaming && (
-          <div className="message-row assistant-row streaming-row">
-            <div className="assistant-avatar pulse-avatar" aria-hidden="true">
-              🌸
-            </div>
-            <div className="assistant-bubble streaming-bubble">
-              <div className="streaming-status">
-                <span className="typing-hearts" aria-hidden="true">
-                  <span>💖</span>
-                  <span>✨</span>
-                  <span>💖</span>
-                </span>
-                <span>{formatStageLabel(statusStage)}</span>
+              <div className="starter-grid">
+                {STARTER_QUESTIONS.map((q) => (
+                  <button
+                    key={q.id}
+                    type="button"
+                    className="starter-card"
+                    disabled={isStreaming}
+                    onClick={() => onSendMessage(q.text)}
+                  >
+                    {q.text}
+                  </button>
+                ))}
               </div>
-              <ToolTrace trace={liveTrace} isLive />
             </div>
-          </div>
-        )}
+          )}
 
-        {errorState && (
-          <div
-            className={`error-banner ${
-              errorState.code === "rate_limited" ? "rate-limit-banner" : ""
-            }`}
-            role="alert"
-          >
-            <div>
-              <strong>
-                {errorState.code === "rate_limited"
-                  ? "⏳ Rate limit reached: "
-                  : "⚠️ Notice: "}
-              </strong>
-              <span>{errorState.message}</span>
+          {messages.map((msg) => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              onSelectFollowUp={onSendMessage}
+              isStreaming={isStreaming}
+              voiceSupported={voiceOutput.isSupported}
+              isSpeakingThis={voiceOutput.isSpeaking && voiceOutput.speakingMessageId === msg.id}
+              onSpeak={voiceOutput.speak}
+              onStopSpeaking={voiceOutput.stop}
+            />
+          ))}
+
+          {isStreaming && (
+            <div className="message-row assistant-row streaming-row">
+              <div className="assistant-content">
+                <div className="streaming-status">
+                  <span className="typing-dots" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                  <span>{formatStageLabel(statusStage)}</span>
+                </div>
+                {liveTrace?.length > 0 && <ToolTrace trace={liveTrace} isLive />}
+              </div>
             </div>
-            <button
-              type="button"
-              className="icon-close-btn"
-              onClick={onClearError}
-              aria-label="Dismiss error"
+          )}
+
+          {errorState && (
+            <div
+              className={`error-banner ${
+                errorState.code === "rate_limited" ? "rate-limit-banner" : ""
+              }`}
+              role="alert"
             >
-              ✕
-            </button>
-          </div>
-        )}
+              <div>
+                <strong>
+                  {errorState.code === "rate_limited"
+                    ? "Rate limit reached: "
+                    : "Notice: "}
+                </strong>
+                <span>{errorState.message}</span>
+              </div>
+              <button
+                type="button"
+                className="icon-close-btn"
+                onClick={onClearError}
+                aria-label="Dismiss error"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
-        <div ref={bottomRef} />
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       <form className="composer-bar" onSubmit={handleSubmit}>
-        <div className="composer-input-wrap">
-          <textarea
-            rows={1}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about Midwest winter risk, compare hubs, or inspect Dallas drivers… ✨"
-            disabled={isStreaming}
-            maxLength={2000}
-          />
-          <div className="send-btn-anchor">
-            {particles.length > 0 && (
-              <div className="send-burst-layer" aria-hidden="true">
-                {particles.map((p) => (
-                  <span
-                    key={p.id}
-                    className="send-particle"
-                    style={{
-                      "--tx": p.tx,
-                      "--ty": p.ty,
-                      "--rot": p.rot,
-                      animationDelay: p.delay,
-                    }}
-                  >
-                    {p.emoji}
-                  </span>
-                ))}
-              </div>
-            )}
+        <div className="composer-inner">
+          {voiceInput.error && (
+            <div className="voice-error-banner" role="alert">
+              <span>{voiceInput.error}</span>
+              <button
+                type="button"
+                className="icon-close-btn"
+                onClick={voiceInput.clearError}
+                aria-label="Dismiss voice error"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <div className="composer-input-wrap">
+            <textarea
+              rows={1}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                voiceInput.isListening
+                  ? voiceInput.interimTranscript || "Listening… speak your question"
+                  : "Ask about hub risk, compare cities, or check weather stats…"
+              }
+              disabled={isStreaming}
+              maxLength={2000}
+            />
+            <button
+              type="button"
+              className={`voice-mic-btn ${voiceInput.isListening ? "listening" : ""}`}
+              onClick={voiceInput.toggleListening}
+              disabled={isStreaming || !voiceInput.isSupported}
+              aria-label={voiceInput.isListening ? "Stop voice input" : "Start voice input"}
+              aria-pressed={voiceInput.isListening}
+              title={
+                !voiceInput.isSupported
+                  ? "Voice input is not supported in this browser"
+                  : voiceInput.isListening
+                    ? "Stop listening"
+                    : "Dictate question with microphone"
+              }
+            >
+              {voiceInput.isListening ? "⏹" : "🎙"}
+            </button>
             <button
               type="submit"
-              className={`send-btn ${buttonPopping ? "send-btn-pop" : ""}`}
+              className="send-btn"
               disabled={isStreaming || !draft.trim()}
             >
-              {isStreaming ? "Thinking…" : "Send 💖"}
+              {isStreaming ? "Thinking…" : "Send"}
             </button>
           </div>
-        </div>
-        <div className="composer-hint">
-          Press <kbd>Enter</kbd> to send · <kbd>Shift + Enter</kbd> for new line · 20 portfolio
-          hubs only
         </div>
       </form>
     </section>

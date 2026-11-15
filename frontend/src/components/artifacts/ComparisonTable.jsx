@@ -13,7 +13,7 @@ export default function ComparisonTable({ artifact }) {
   return (
     <div className="artifact-card">
       <div className="artifact-header">
-        <span className="artifact-title">🎀 {artifact.title}</span>
+        <span className="artifact-title">{artifact.title}</span>
         <span className="artifact-meta">{hubs.length} hubs compared</span>
       </div>
       <div className="table-scroll">
@@ -44,7 +44,6 @@ export default function ComparisonTable({ artifact }) {
                         <span className="score-num">
                           {val !== undefined && val !== null ? Number(val).toFixed(1) : "—"}
                         </span>
-                        {isWinner && <span className="crown-tag" title="Highest exposure">✨</span>}
                       </td>
                     );
                   })}

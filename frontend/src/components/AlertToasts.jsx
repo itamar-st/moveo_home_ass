@@ -10,7 +10,7 @@ export default function AlertToasts({ toasts, onDismiss }) {
       {toasts.map((toast) => (
         <div key={toast.toastId} className="alert-toast">
           <div className="alert-toast-head">
-            <span className="alert-toast-badge">🚨 {toast.hub}</span>
+            <span className="alert-toast-badge">{toast.hub}</span>
             <span className={`tier-pill ${severityClass(toast.alert_type)}`}>
               {toast.alert_type?.replaceAll("_", " ")}
             </span>

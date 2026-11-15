@@ -13,46 +13,24 @@ export default function AlertsPanel({
   return (
     <aside className="alerts-panel">
       <div className="panel-header alerts-panel-header">
-        <div>
-          <h2>🎀 Risk Pulse &amp; Alerts</h2>
-          <p className="panel-subtitle">Operational overlay &amp; system health</p>
-        </div>
+        <h2>Alerts &amp; Status</h2>
         <span className={`sse-badge ${streamConnected ? "live" : "offline"}`}>
           {streamConnected ? "● Live" : "○ Syncing"}
         </span>
       </div>
 
-      <div className="health-card">
-        <div className="health-row">
-          <span>API Status</span>
+      <div className="health-strip">
+        <div className="health-strip-row">
           <span className={`status-dot ${isBackendOk ? "ok" : "err"}`}>
-            {isBackendOk ? "Online 💖" : "Offline"}
+            API {isBackendOk ? "Online" : "Offline"}
           </span>
-        </div>
-        <div className="health-row">
-          <span>Database</span>
           <span className={`status-dot ${isDbOk ? "ok" : "err"}`}>
-            {isDbOk ? "Connected" : "Checking"}
+            DB {isDbOk ? "OK" : "Checking"}
           </span>
         </div>
-        {health?.scoring_version && (
-          <div className="health-row">
-            <span>Scoring</span>
-            <span>{health.scoring_version}</span>
-          </div>
-        )}
         {health?.weather_data_until && (
-          <div className="health-row">
-            <span>Weather Until</span>
-            <span>{health.weather_data_until}</span>
-          </div>
-        )}
-        {health?.model && (
-          <div className="health-row">
-            <span>Model</span>
-            <span className="model-truncate" title={health.model}>
-              {health.model}
-            </span>
+          <div className="health-strip-meta">
+            Data through {health.weather_data_until}
           </div>
         )}
       </div>
@@ -64,19 +42,15 @@ export default function AlertsPanel({
           onAskAlerts?.("Are there any active severe weather alerts at our hubs right now?")
         }
       >
-        🌩️ Ask Agent for Live NWS Alerts
+        Check Live NWS Alerts
       </button>
 
       <div className="alerts-feed">
-        <div className="alerts-feed-title">Recent Score &amp; Tier Alerts</div>
+        <div className="alerts-feed-title">Recent Risk Changes</div>
         {loading && <p className="muted-note">Checking alerts…</p>}
         {!loading && alerts.length === 0 && (
           <div className="empty-alerts-box">
-            <span>🌸</span>
-            <p>
-              No risk-change alerts recorded yet. Live score &amp; tier changes stream here
-              automatically.
-            </p>
+            No risk-change alerts recorded yet. Score and tier changes appear here automatically.
           </div>
         )}
         {!loading &&

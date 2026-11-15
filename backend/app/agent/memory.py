@@ -113,11 +113,21 @@ async def persist_assistant_message(
     return msg
 
 
+def format_user_message(content: str) -> str:
+    """Wrap untrusted user text in explicit XML-like delimiters so it cannot spoof OBSERVATION: turns."""
+    escaped = (
+        content.replace("<user_message>", "&lt;user_message&gt;")
+        .replace("</user_message>", "&lt;/user_message&gt;")
+    )
+    return f"<user_message>\n{escaped}\n</user_message>"
+
+
 async def load_history_for_llm(
     db: AsyncSession,
     session_id: str,
     *,
     last_n_turns: int = 8,
+    max_history_chars: int = 16_000,
 ) -> tuple[list[dict[str, str]], list[str]]:
     """Load the last N turns as LLM chat messages plus compact prior tool lines.
 
@@ -152,7 +162,7 @@ async def load_history_for_llm(
     for msg in sliced:
         if msg.role == "user":
             _flush_tools()
-            history.append({"role": "user", "content": msg.content})
+            history.append({"role": "user", "content": format_user_message(msg.content)})
         elif msg.role == "tool":
             pending_tools.append(msg.content)
             prior_tool_lines.append(msg.content)
@@ -161,4 +171,10 @@ async def load_history_for_llm(
             history.append({"role": "assistant", "content": msg.content})
 
     _flush_tools()
+
+    total_chars = sum(len(m["content"]) for m in history)
+    while total_chars > max_history_chars and len(history) > 1:
+        removed = history.pop(0)
+        total_chars -= len(removed["content"])
+
     return history, prior_tool_lines

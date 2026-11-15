@@ -4,21 +4,18 @@ export default function FollowUpChips({ followUps = [], onSelect, disabled = fal
   }
 
   return (
-    <div className="followup-row">
-      <span className="followup-label">Ask next:</span>
-      <div className="followup-chips">
-        {followUps.map((question, idx) => (
-          <button
-            key={idx}
-            type="button"
-            className="followup-chip"
-            disabled={disabled}
-            onClick={() => onSelect?.(question)}
-          >
-            ✨ {question}
-          </button>
-        ))}
-      </div>
+    <div className="followup-chips">
+      {followUps.slice(0, 3).map((question, idx) => (
+        <button
+          key={idx}
+          type="button"
+          className="followup-chip"
+          disabled={disabled}
+          onClick={() => onSelect?.(question)}
+        >
+          {question}
+        </button>
+      ))}
     </div>
   );
 }

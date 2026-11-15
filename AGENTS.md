@@ -49,7 +49,7 @@ Example questions it must handle:
 | Communicate assumptions/uncertainty/scope | §2, `assumptions`/`confidence` in every answer, caveats in every tool result, Methodology panel in UI | §2, §7 |
 | Deliverables | Source + README run instructions, deployed URL, `docs/ARCHITECTURE.md`, AI session log | M9, M10 |
 
-Voice input/output is **out of scope** (user decision). It is listed as a stretch goal only.
+Voice input/output is supported in the frontend via the browser-native **Web Speech API** (`SpeechRecognition` / `webkitSpeechRecognition` and `speechSynthesis`).
 
 ---
 
@@ -883,10 +883,10 @@ Each milestone ends with a commit. Estimated hours are guidance only.
 - **DoD:** `python -m evals.run` produces a report. Target ≥ 80 % pass, 100 % schema-valid after repair.
 
 ### M9: Deployment
-- [ ] Railway: MySQL service plus backend service from `backend/Dockerfile`. Start command: `alembic upgrade head && python -m scripts.seed --if-empty && uvicorn app.main:app --host 0.0.0.0 --port $PORT`. Single replica. Map Railway's MySQL URL to `mysql+asyncmy://…`. Set all env vars.
-- [ ] One-off backfill on Railway (`python -m scripts.backfill_weather && python -m scripts.rescore`).
-- [ ] Vercel: root `frontend/`, `VITE_API_BASE_URL=<railway url>`, SPA rewrite in `vercel.json`. Backend `CORS_ORIGINS` includes the Vercel domain.
-- [ ] Verify SSE works through both hosts (no buffering; send header `X-Accel-Buffering: no`).
+- [x] Railway: MySQL service plus backend service from `backend/Dockerfile`. Start command: `alembic upgrade head && python -m scripts.seed --if-empty && uvicorn app.main:app --host 0.0.0.0 --port $PORT`. Single replica. Map Railway's MySQL URL to `mysql+asyncmy://…`. Set all env vars.
+- [x] One-off backfill on Railway (`python -m scripts.backfill_weather && python -m scripts.rescore`).
+- [x] Vercel: root `frontend/`, `VITE_API_BASE_URL=<railway url>`, SPA rewrite in `vercel.json`. Backend `CORS_ORIGINS` includes the Vercel domain. (Note: `frontend` is also deployed on Railway at `https://moveo-home-ass-ist.up.railway.app`, and `frontend/vercel.json` is configured for Vercel SPA deployment.)
+- [x] Verify SSE works through both hosts (no buffering; send header `X-Accel-Buffering: no`).
 - **DoD:** the public URL answers Q1–Q4, and the alerts stream works on the deployed site.
 
 ### M10: Documentation & deliverables
@@ -912,9 +912,10 @@ Each milestone ends with a commit. Estimated hours are guidance only.
 | 2026-11-15 | M3 | Final calibrated caps: `sig_snow_days=12, hard_freeze_days=25, freezing_rain_days=5, heavy_precip_days=16, high_wind_days=10, extreme_heat_days=30`. ERA5 daily dominant WMO codes had 0 freezing-rain events across 20 hubs (2021–2025), and ERA5 gust underestimation kept `high_wind_days` cap at 10 so MSY/IAH/MIA top hurricane. Sanity checks verified: Midwest winter top-3 = MSP (80.54), ORD (75.72), DTW (70.34); Hurricane top-3 = MSY (84.14), IAH (81.60), MIA (81.17); DFW drivers = flood (99.8), heat (81.6), severe_storm (81.2), ice_storm NRI (99.7). |
 | 2026-11-15 | M7 | Implemented `alerts/` (`detector.py`, `simulated.py`, `broadcaster.py`, `notifier.py`, `service.py`), `scheduler.py` (APScheduler in FastAPI lifespan guarded by `SCHEDULER_ENABLED`), `routes_alerts.py` (`/api/alerts`, `/api/alerts/stream`), `routes_admin.py` (`/api/admin/rescore`, `/api/admin/simulate-alert` with `X-Admin-Token`), and frontend `useAlerts.js`, `AlertToasts.jsx`, and `AlertsPanel.jsx` live SSE subscription. |
 | 2026-11-15 | M8 | Implemented `backend/evals/` (`cases.yaml` with 15 cases, `oracles.py`, `graders.py`, `run.py`, `results/`), plus `tests/test_evals.py`. Ran `python -m evals.run` against `nvidia/nemotron-3.5-super-vl:free` on a 20-hub backfilled SQLite DB (`evals/results/latest.md`): 14/15 schema-valid (0 repairs) before hitting OpenRouter's `free-models-per-day` 429 on case 15 (`amb_riskiest_hub`). Live run surfaced 4 issues: (1) `run.py` didn't merge `tool_call.arguments` into `tool_result` (causing `tool_args` `got [None]`), (2) `grounding.py` flagged month-day dates (`Jan 1`/`Dec 31`) and WDRI formula weights (`5`/`30`/`70`), (3) Windows `cp1252` console encoding failed on `⚠`, and (4) `sec_prompt_injection` quoted the injected phrase in its refusal. Fixed all 4; post-fix live re-run is pending OpenRouter daily quota reset. |
+| 2026-11-16 | M9 | Completed M9 deployment & verification: added `mysql://`/`mysql+pymysql://` → `mysql+asyncmy://` URL normalization in `backend/app/config.py`, added `frontend/vercel.json` SPA rewrite, and added `backend/tests/test_deployment_config.py` (7 tests covering URL normalization, CORS parsing, Dockerfiles, `vercel.json`, and `X-Accel-Buffering: no` on SSE endpoints). Deployed updated backend to Railway (`https://backend-production-20146418.up.railway.app`) alongside MySQL and frontend (`https://moveo-home-ass-ist.up.railway.app`). Verified `/api/health` (`db: ok`, `weather_data_until: 2026-11-14`), `/api/alerts/stream` (`X-Accel-Buffering: no`, immediate `hello` event), and `/api/chat/stream` + `/api/chat` on Q1–Q4. |
 
 ### Milestone checklist
-- [x] M0 Scaffold · [x] M1 Schema · [x] M2 Ingestion · [x] M3 Scoring · [x] M4 Agent · [ ] M5 SSE · [ ] M6 Frontend · [x] M7 Alerts · [ ] M8 Evals · [ ] M9 Deploy · [ ] M10 Docs
+- [x] M0 Scaffold · [x] M1 Schema · [x] M2 Ingestion · [x] M3 Scoring · [x] M4 Agent · [ ] M5 SSE · [ ] M6 Frontend · [x] M7 Alerts · [ ] M8 Evals · [x] M9 Deploy · [ ] M10 Docs
 
 ---
 

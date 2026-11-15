@@ -7,12 +7,12 @@ export default function AlertsList({ artifact }) {
   return (
     <div className="artifact-card">
       <div className="artifact-header">
-        <span className="artifact-title">🎀 {artifact.title}</span>
+        <span className="artifact-title">{artifact.title}</span>
         <span className="artifact-meta">{alerts.length} active</span>
       </div>
 
       {alerts.length === 0 ? (
-        <p className="muted-note">All clear! No active NWS weather alerts match this filter. 🌸</p>
+        <p className="muted-note">No active NWS weather alerts match this filter.</p>
       ) : (
         <ul className="alerts-artifact-list">
           {alerts.map((alert, idx) => (

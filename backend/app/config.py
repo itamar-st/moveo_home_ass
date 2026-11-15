@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +18,19 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "mysql+asyncmy://wria:wria@localhost:3306/wria"
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _normalize_mysql_scheme(cls, value: str) -> str:
+        """Map standard MySQL URLs (e.g. Railway MYSQL_URL) to the asyncmy driver."""
+        if not isinstance(value, str):
+            return value
+        trimmed = value.strip()
+        if trimmed.startswith("mysql://"):
+            return "mysql+asyncmy://" + trimmed[len("mysql://") :]
+        if trimmed.startswith("mysql+pymysql://"):
+            return "mysql+asyncmy://" + trimmed[len("mysql+pymysql://") :]
+        return trimmed
+
     # OpenRouter LLM
     openrouter_api_key: str = ""
     openrouter_model: str = "nvidia/nemotron-3.5-super-vl:free"
@@ -28,7 +42,7 @@ class Settings(BaseSettings):
     nws_user_agent: str = "WeatherRiskAgent (you@example.com)"
 
     # Admin & Alerts
-    admin_token: str = "change-me-admin-token"
+    admin_token: str = ""
     alert_webhook_url: str = ""
     alert_score_delta: float = 10.0
 
@@ -39,8 +53,10 @@ class Settings(BaseSettings):
 
     # API & Rate Limiting
     cors_origins: str = "http://localhost:5173"
+    trust_proxy_headers: bool = False
     chat_rate_limit_per_min: int = 10
     max_agent_steps: int = 6
+    llm_max_tokens: int = 2048
 
     # Scoring
     scoring_version: str = "wdri_v1"
